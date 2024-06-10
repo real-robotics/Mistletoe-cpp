@@ -9,30 +9,30 @@
 //  $ gcc -o listener listener.cpp `pkg-config --cflags --libs lcm`
 
 #include <stdio.h>
+#include <iostream>
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "exlcm/example_t.hpp"
+#include "exlcm/quad_state_recv_t.hpp"
+
+#include "exlcm/quad_state_send_t.hpp"
 
 class Handler {
   public:
     ~Handler() {}
     void handleMessage(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
-                       const exlcm::example_t *msg)
+                       const exlcm::quad_state_recv_t *msg)
     {
         int i;
         printf("Received message on channel \"%s\":\n", chan.c_str());
         printf("  timestamp   = %lld\n", (long long) msg->timestamp);
-        printf("  position    = (%f, %f, %f)\n", msg->position[0], msg->position[1],
-               msg->position[2]);
-        printf("  orientation = (%f, %f, %f, %f)\n", msg->orientation[0], msg->orientation[1],
-               msg->orientation[2], msg->orientation[3]);
-        printf("  ranges:");
-        for (i = 0; i < msg->num_ranges; i++)
-            printf(" %d", msg->ranges[i]);
-        printf("\n");
-        printf("  name        = '%s'\n", msg->name.c_str());
-        printf("  enabled     = %d\n", msg->enabled);
+
+        std::cout << "Position: ";
+        for (int i = 0; i < 12; i++) {
+            std::cout << msg->position[i];
+            if (i != 11) std::cout << ", ";
+        }
+        std::cout << std::endl;
     }
 };
 

@@ -1,3 +1,3 @@
-[submodule "external/moteus"]
-	path = external/moteus
+[submodule "control/thirdparty/moteus"]
+	path = control/thirdparty/moteus
 	url = https://github.com/mjbots/moteus.git
