@@ -43,7 +43,7 @@ int main(int argc, char **argv)
         return 1;
 
     Handler handlerObject;
-    lcm.subscribe("EXAMPLE", &Handler::handleMessage, &handlerObject);
+    lcm.subscribe("COMMAND", &Handler::handleMessage, &handlerObject);
 
     while (0 == lcm.handle()) {
         // Do nothing
