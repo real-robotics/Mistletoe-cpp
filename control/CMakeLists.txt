@@ -15,7 +15,7 @@ target_include_directories(example_messages-cpp INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 # Include moteus
-include_directories(external/moteus/lib/cpp/mjbots/moteus)
+include_directories(thirdparty/moteus/lib/cpp/mjbots/moteus)
 
 add_executable(moteus-test moteus-test.cpp)
 target_link_libraries(moteus-test example_messages-cpp ${LCM_NAMESPACE}lcm)
