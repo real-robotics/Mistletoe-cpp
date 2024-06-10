@@ -10,9 +10,8 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "exlcm/quad_state_recv_t.hpp"
-
-#include "exlcm/quad_state_send_t.hpp"
+#include "exlcm/quad_command_t.hpp"
+#include "exlcm/quad_state_t.hpp"
 
 int main(int argc, char **argv)
 {
@@ -20,7 +19,7 @@ int main(int argc, char **argv)
     if (!lcm.good())
         return 1;
 
-    exlcm::quad_state_recv_t my_data;
+    exlcm::quad_command_t my_data;
     my_data.timestamp = 0;
 
     my_data.position[0] = 1;

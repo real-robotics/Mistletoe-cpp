@@ -13,15 +13,14 @@
 
 #include <lcm/lcm-cpp.hpp>
 
-#include "exlcm/quad_state_recv_t.hpp"
-
-#include "exlcm/quad_state_send_t.hpp"
+#include "exlcm/quad_command_t.hpp"
+#include "exlcm/quad_state_t.hpp"
 
 class Handler {
   public:
     ~Handler() {}
     void handleMessage(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
-                       const exlcm::quad_state_recv_t *msg)
+                       const exlcm::quad_command_t *msg)
     {
         int i;
         printf("Received message on channel \"%s\":\n", chan.c_str());
