@@ -39,6 +39,8 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(pi3hat)
 
+add_compile_definitions(pi3hat __ARM_ARCH_7A__)
+
 add_executable(lcm-client test-lcm-client.cpp)
 target_link_libraries(lcm-client example_messages-cpp ${LCM_NAMESPACE}lcm)
 
