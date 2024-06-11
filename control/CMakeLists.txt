@@ -17,6 +17,18 @@ target_include_directories(example_messages-cpp INTERFACE
 # Include moteus
 include_directories(thirdparty/moteus/lib/cpp/mjbots/moteus)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+
+
+include(FetchContent)
+FetchContent_Declare(
+  pi3hat
+  GIT_REPOSITORY https://github.com/mjbots/pi3hat.git
+  GIT_TAG        c8b9e13
+)
+
+FetchContent_MakeAvailable(pi3hat)
+
 add_executable(moteus-test moteus-test.cpp)
 target_link_libraries(moteus-test example_messages-cpp ${LCM_NAMESPACE}lcm)
 
@@ -28,3 +40,5 @@ target_link_libraries(lcm-server example_messages-cpp ${LCM_NAMESPACE}lcm)
 
 add_executable(control control.cpp)
 target_link_libraries(control example_messages-cpp ${LCM_NAMESPACE}lcm)
+
+target_link_libraries(control pi3hat::pi3hat)
