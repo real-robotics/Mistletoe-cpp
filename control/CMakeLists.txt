@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(test)
+project(control)
 
 # Find LCM
 find_package(lcm REQUIRED)
@@ -25,3 +25,6 @@ target_link_libraries(lcm-client example_messages-cpp ${LCM_NAMESPACE}lcm)
 
 add_executable(lcm-server test-lcm-server.cpp)
 target_link_libraries(lcm-server example_messages-cpp ${LCM_NAMESPACE}lcm)
+
+add_executable(control control.cpp)
+target_link_libraries(control example_messages-cpp ${LCM_NAMESPACE}lcm)

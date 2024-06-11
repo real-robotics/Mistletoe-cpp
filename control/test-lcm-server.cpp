@@ -51,7 +51,8 @@ int main(int argc, char **argv)
     while (true) {
         exlcm::quad_state_t fake_state = {
             .timestamp = std::chrono::system_clock::now().time_since_epoch().count(),
-            .position = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+            .position = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+            .velocity = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
         };
 
         // update the state

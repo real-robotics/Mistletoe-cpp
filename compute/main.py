@@ -16,7 +16,8 @@ def handle_state(channel, data):
     msg = quad_state_t.decode(data)
     print(f'Message received on channel: {channel}')
     print(f'Timestamp: {msg.timestamp}')
-    print(f'Positions: {msg.position}')
+    print(f'Position: {msg.position}')
+    print(f'Velocity: {msg.velocity}')
 
 lc.subscribe("STATE", handle_state)
 
