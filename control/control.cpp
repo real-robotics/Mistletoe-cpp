@@ -31,13 +31,13 @@ class Handler {
         std::cout << "Received Message on Channel: " << chan << std::endl;
         std::cout << "    timestamp = " << msg->timestamp << std::endl;
         
-        for (int i = 0; i < NUM_MOTORS; i++) {
-            double position = msg->position[i];
-            moteus::PositionMode::Command position_cmd;
-            position_cmd.position = position;
-            position_cmd.velocity = 0;
-            controllers.at(i).SetPosition(position_cmd);
-        }
+        // for (int i = 0; i < NUM_MOTORS; i++) {
+        //     double position = msg->position[i];
+        //     moteus::PositionMode::Command position_cmd;
+        //     position_cmd.position = position;
+        //     position_cmd.velocity = 0;
+        //     controllers.at(i).SetPosition(position_cmd);
+        // }
         
         std::cout << std::endl;
     }
