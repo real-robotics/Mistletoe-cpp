@@ -1,11 +1,33 @@
 import lcm
 import time
-from exlcm import quad_command_t
+from exlcm import quad_command_t, quad_state_t
+import threading
 
 lc = lcm.LCM()
 
-msg = quad_command_t()
-msg.timestamp = time.time_ns()
-msg.position = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+def handle_lcm():
+    while True:
+        lc.handle()
 
-lc.publish("COMMAND", msg.encode())
+handler_thread = threading.Thread(target=handle_lcm)
+handler_thread.start()
+
+def handle_state(channel, data):
+    msg = quad_state_t.decode(data)
+    print(f'Message received on channel: {channel}')
+    print(f'Timestamp: {msg.timestamp}')
+    print(f'Positions: {msg.position}')
+
+lc.subscribe("STATE", handle_state)
+
+try:
+    while True:
+        msg = quad_command_t()
+        msg.timestamp = time.time_ns()
+        msg.position = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+        lc.publish("COMMAND", msg.encode())
+
+        time.sleep(0.25)
+except KeyboardInterrupt:
+    handler_thread.join()
