@@ -37,7 +37,8 @@ let scene,
   controls,
   urdfDragControls,
   bb,
-  ground;
+  ground,
+  websocket;
 
 init();
 render();
@@ -61,8 +62,6 @@ function init() {
   // const axesHelper = new AxesHelper(1);
   // axesHelper.scale.addScalar(100)
   // scene.add(axesHelper);
-
-  slidersDiv = document.getElementById('sliders');
 
   camera = new PerspectiveCamera();
   camera.position.set(10, 10, 10);
