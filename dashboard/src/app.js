@@ -171,7 +171,6 @@ function onDocumentMouseDown(event) {
 // Mouse up event handler
 function onDocumentMouseUp(event) {
   event.preventDefault();
-  selectedObject = null;
   controls.enabled = true;
 }
 
