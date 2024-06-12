@@ -2,6 +2,7 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <signal.h>
 
 #include <lcm/lcm-cpp.hpp>
 #include "exlcm/quad_command_t.hpp"
@@ -50,6 +51,16 @@ void handle_lcm(lcm::LCM *lcm) {
     }
 }
 
+void handle_exit(int s) {
+    std::cout << "Stopping all motors." << std::endl;
+    // TODO: change to use moteus tool stop all
+    for (moteus::Controller controller : controllers) {
+        controller.SetStop();
+    }
+    std::cout << "Exiting program with code " << s << std::endl;
+    exit(s);
+}
+
 int main(int argc, char** argv) {
     // MOTEUS Initialization
 
@@ -68,6 +79,17 @@ int main(int argc, char** argv) {
             moteus::Controller(options)
         );
     }
+
+    // Make sure that all motors stop when the program is killed
+    // TODO: change to use sigactions instead
+    signal(SIGINT, handle_exit);
+
+    // Make sure motors stop for other types of exits
+    // signal(SIGABRT, handle_exit);
+    signal(SIGFPE, handle_exit);
+    signal(SIGILL, handle_exit);
+    signal(SIGSEGV, handle_exit);
+    // signal(SIGTERM, handle_exit);
 
     for (moteus::Controller controller : controllers) {
         controller.SetStop();
