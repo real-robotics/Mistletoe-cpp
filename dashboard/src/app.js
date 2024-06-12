@@ -36,14 +36,25 @@ let scene,
   robot,
   controls,
   urdfDragControls,
-  axesHelper, x;
+  bb,
+  ground;
 
 init();
 render();
 
-function init() {
-  x = 0
+function resetQuad() {
+  robot.joints['11'].setJointValue(MathUtils.degToRad(90));
+  robot.joints['21'].setJointValue(MathUtils.degToRad(-90));
+  robot.joints['31'].setJointValue(MathUtils.degToRad(-90));
+  robot.joints['41'].setJointValue(MathUtils.degToRad(90));
 
+  robot.joints['12'].setJointValue(MathUtils.degToRad(215));
+  robot.joints['22'].setJointValue(MathUtils.degToRad(215));
+  robot.joints['32'].setJointValue(MathUtils.degToRad(215));
+  robot.joints['42'].setJointValue(MathUtils.degToRad(-215));
+}
+
+function init() {
   scene = new Scene();
   scene.background = new Color(0x263238);
 
@@ -51,13 +62,14 @@ function init() {
   // axesHelper.scale.addScalar(100)
   // scene.add(axesHelper);
 
+  slidersDiv = document.getElementById('sliders');
+
   camera = new PerspectiveCamera();
   camera.position.set(10, 10, 10);
   camera.lookAt(0, 0, 0);
 
   renderer = new WebGLRenderer({ antialias: true });
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFSoftShadowMap;
   renderer.shadowMap.type = PCFSoftShadowMap;
   document.body.appendChild(renderer.domElement);
 
@@ -68,21 +80,36 @@ function init() {
   );
   urdfDragControls.enabled = true;
 
-  const pointLight = new PointLight(0xffffff, 1000, 0, 1.5);
+  const pointLight = new PointLight(0xffffff, 500, 0, 1.5);
   pointLight.position.set(-10, 50, 2);
   pointLight.shadow.mapSize.setScalar(4096);
   pointLight.castShadow = true;
+  pointLight.shadow.radius = 8;
   scene.add(pointLight);
+
+  // const pointLight2 = new PointLight(0xffffff, 50, 0, 1.5);
+  // pointLight2.position.set(10, 30, 15);
+  // pointLight2.shadow.mapSize.setScalar(4096);
+  // pointLight2.castShadow = true;
+  // scene.add(pointLight2);
+  // pointLight.shadow.radius = 24;
+
+  // const pointLight3 = new PointLight(0xffffff, 50, 0, 1.5);
+  // pointLight3.position.set(-10, 30, -15);
+  // pointLight3.shadow.mapSize.setScalar(4096);
+  // pointLight3.castShadow = true;
+  // pointLight.shadow.radius = 24;
+  // scene.add(pointLight3);
 
   const ambientLight = new AmbientLight(0xffffff, 0.2);
   scene.add(ambientLight);
 
-  const ground = new Mesh(
+  ground = new Mesh(
     new PlaneGeometry(3000, 3000),
-    new MeshStandardMaterial({ color: 0xccccc0 })
+    new ShadowMaterial({ opacity: 0.25 })
   );
   ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -10;
+  // ground.position.y = -10;
   ground.scale.setScalar(1);
   ground.receiveShadow = true;
   scene.add(ground);
@@ -109,7 +136,7 @@ function init() {
       c.castShadow = true;
     });
 
-    const bb = new Box3();
+    bb = new Box3();
     bb.setFromObject(robot);
     robot.position.y -= bb.min.y;
 
@@ -117,9 +144,9 @@ function init() {
 
     console.log(Object.keys(robot.joints));
 
+    resetQuad();
+
   };
-
-
 
   onResize();
   window.addEventListener("resize", onResize);
@@ -134,8 +161,6 @@ document.addEventListener("mouseup", onDocumentMouseUp);
 
 // Mouse down event handler
 function onDocumentMouseDown(event) {
-  event.preventDefault();
-
   const intersects = getIntersects(event.layerX, event.layerY);
   if (intersects.length > 0) {
     controls.enabled = false;
@@ -175,6 +200,8 @@ function render() {
   renderer.render(scene, camera);
   urdfDragControls.update();
 
-  if (robot) {
+  if (robot && bb) {
+    bb.setFromObject(robot);
+    ground.position.y = bb.min.y;
   }
 }
