@@ -8,6 +8,7 @@
 #include "exlcm/quad_state_t.hpp"
 
 #include "moteus.h"
+#include "pi3hat_moteus_transport.h"
 
 using namespace mjbots;
 
@@ -52,7 +53,10 @@ void handle_lcm(lcm::LCM *lcm) {
 int main(int argc, char** argv) {
     // MOTEUS Initialization
 
+    mjbots::pi3hat::Pi3HatMoteusFactory::Register();
+
     moteus::Controller::DefaultArgProcess(argc, argv);
+
 
     for (int i = 0; i < NUM_MOTORS; i++) {
         int id = IDS[i];
@@ -105,7 +109,7 @@ int main(int argc, char** argv) {
         // update the state
         lcm->publish("STATE", &state);
 
-        usleep(250000); // sleep for 250ms
+        usleep(10000); // sleep for 10ms
     }
 
     thread.join();
