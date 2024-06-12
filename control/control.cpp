@@ -85,11 +85,11 @@ int main(int argc, char** argv) {
     signal(SIGINT, handle_exit);
 
     // Make sure motors stop for other types of exits
-    signal(SIGABRT, handle_exit);
+    // signal(SIGABRT, handle_exit);
     signal(SIGFPE, handle_exit);
     signal(SIGILL, handle_exit);
     signal(SIGSEGV, handle_exit);
-    signal(SIGTERM, handle_exit);
+    // signal(SIGTERM, handle_exit);
 
     for (moteus::Controller controller : controllers) {
         controller.SetStop();
