@@ -1,0 +1,22 @@
+{
+  "name": "dashboard",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "rm -rf dist/assets && cp -r assets dist/assets && parcel src/index.html",
+    "build": "rm -rf dist/assets && cp -r assets dist/assets && parcel build src/index.html"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@parcel/packager-xml": "^2.12.0",
+    "@parcel/transformer-xml": "^2.12.0",
+    "parcel": "^2.12.0"
+  },
+  "dependencies": {
+    "three": "^0.165.0",
+    "urdf-loader": "^0.12.1"
+  }
+}

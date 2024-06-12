@@ -86,11 +86,11 @@ int main(int argc, char** argv) {
     std::thread thread(handle_lcm, lcm);
     thread.detach();
 
-    while (true) {
-        exlcm::quad_state_t state = {
-            .timestamp = std::chrono::system_clock::now().time_since_epoch().count()
-        };
+    exlcm::quad_state_t state = {
+        .timestamp = std::chrono::system_clock::now().time_since_epoch().count()
+    };
 
+    while (true) {
         for (int i = 0; i < NUM_MOTORS; i++) {
             moteus::Controller controller = controllers.at(i);
             auto maybe_state = controller.SetQuery();
