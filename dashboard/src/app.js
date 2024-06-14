@@ -26,9 +26,8 @@ import {
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import URDFLoader from "urdf-loader";
 import {
-  PointerURDFDragControls,
-  URDFDragControls,
-} from "urdf-loader/src/URDFDragControls";
+  PointerURDFDragControls
+} from "./URDFGrabControls";
 
 let scene,
   camera,
@@ -44,15 +43,15 @@ init();
 render();
 
 function resetQuad() {
-  robot.joints['11'].setJointValue(MathUtils.degToRad(90));
-  robot.joints['21'].setJointValue(MathUtils.degToRad(-90));
-  robot.joints['31'].setJointValue(MathUtils.degToRad(-90));
-  robot.joints['41'].setJointValue(MathUtils.degToRad(90));
+  // robot.joints['11'].setJointValue(MathUtils.degToRad(90));
+  // robot.joints['21'].setJointValue(MathUtils.degToRad(-90));
+  // robot.joints['31'].setJointValue(MathUtils.degToRad(-90));
+  // robot.joints['41'].setJointValue(MathUtils.degToRad(90));
 
-  robot.joints['12'].setJointValue(MathUtils.degToRad(215));
-  robot.joints['22'].setJointValue(MathUtils.degToRad(215));
-  robot.joints['32'].setJointValue(MathUtils.degToRad(215));
-  robot.joints['42'].setJointValue(MathUtils.degToRad(-215));
+  // robot.joints['12'].setJointValue(MathUtils.degToRad(215));
+  // robot.joints['22'].setJointValue(MathUtils.degToRad(215));
+  // robot.joints['32'].setJointValue(MathUtils.degToRad(215));
+  // robot.joints['42'].setJointValue(MathUtils.degToRad(-215));
 }
 
 function init() {
@@ -79,12 +78,33 @@ function init() {
   );
   urdfDragControls.enabled = true;
 
-  const pointLight = new PointLight(0xffffff, 500, 0, 1.5);
-  pointLight.position.set(-10, 50, 2);
+  const pointLight = new PointLight(0xffffff, 1500, 0, 1.5);
+  pointLight.position.set(-20, 25, 2);
   pointLight.shadow.mapSize.setScalar(4096);
   pointLight.castShadow = true;
-  pointLight.shadow.radius = 8;
+  pointLight.shadow.radius = 2;
   scene.add(pointLight);
+
+  const pointLight2 = new PointLight(0x263238, 2000, 0, 1.5);
+  pointLight2.position.set(0, -25, 2);
+  scene.add(pointLight2);
+
+  const pointLight3 = new PointLight(0x263238, 2000, 0, 1.5);
+  pointLight3.position.set(25, 1, -4);
+  scene.add(pointLight3);
+
+
+  const pointLight4 = new PointLight(0x263238, 2000, 0, 1.5);
+  pointLight4.position.set(-25, 1, -4);
+  scene.add(pointLight4);
+
+  const pointLight5 = new PointLight(0x263238, 2000, 0, 1.5);
+  pointLight5.position.set(0, 1, -25);
+  scene.add(pointLight5);
+
+  const pointLight6 = new PointLight(0x263238, 2000, 0, 1.5);
+  pointLight6.position.set(0, 1, 25);
+  scene.add(pointLight6);
 
   // const pointLight2 = new PointLight(0xffffff, 50, 0, 1.5);
   // pointLight2.position.set(10, 30, 15);
@@ -100,7 +120,7 @@ function init() {
   // pointLight.shadow.radius = 24;
   // scene.add(pointLight3);
 
-  const ambientLight = new AmbientLight(0xffffff, 0.2);
+  const ambientLight = new AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
 
   ground = new Mesh(
@@ -121,18 +141,20 @@ function init() {
   const manager = new LoadingManager();
   const loader = new URDFLoader(manager);
   loader.packages = (pkg) => {
-    return `/assets/QUADurdf/${pkg}`;
+    return `/assets/mistletoe_urdf/${pkg}`;
   };
-  loader.load("/assets/QUADurdf/quadurdf.urdf", (result) => {
+  loader.load("/assets/mistletoe_urdf/mistletoe.urdf", (result) => {
     robot = result;
+    console.log(robot)
   });
 
   manager.onLoad = () => {
     robot.scale.setScalar(30);
-    robot.rotation.x = -Math.PI / 2;
+    robot.rotation.x = Math.PI / 2;
 
     robot.traverse(c => {
       c.castShadow = true;
+      c.receiveShadow = true;
     });
 
     bb = new Box3();

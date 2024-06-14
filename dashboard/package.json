@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "rm -rf dist/assets && cp -r assets dist/assets && parcel src/index.html",
-    "build": "rm -rf dist/assets && cp -r assets dist/assets && parcel build src/index.html"
+    "start": "mkdir -p dist && rm -rf dist/assets && cp -r assets dist/assets && parcel src/index.html",
+    "build": "mkdir -p dist && rm -rf dist/assets && cp -r assets dist/assets && parcel build src/index.html"
   },
   "keywords": [],
   "author": "",
