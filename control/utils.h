@@ -33,3 +33,24 @@ Vector3d calculate_force(double l1, double l2, double theta_1, double theta_2, d
 
     return force_foot;
 }
+
+// return whether each foot is contacting, in order in the vector
+vector<bool> detect_contact(double l1, double l2, double theta_1, double theta_2, double theta_3, double x_offset, vector<double> joint_torques, double force_threshold) {
+
+    vector<bool> contact_vector;
+
+    for (int leg_number = 0; i < 4; i++) {
+        int start_idx = i*3;
+        double joint_torque_HAA = joint_torques[start_idx];
+        double joint_torque_HFE = joint_torques[start_idx + 1];
+        double joint_torque_KFE = joint_torques[start_idx + 2];
+        
+        Vector3d leg_joint_torques(joint_torque_HAA. joint_torque_HFE, joint_torque_KFE);
+
+        Vector3d contact_forces = calculate_force(l1, l2, theta_1, theta_2, theta_3, x_offset, leg_joint_torques);
+
+        contact.push_back(contact_forces.z() > force_threshold);
+    }
+
+    return contact_vector;
+}
