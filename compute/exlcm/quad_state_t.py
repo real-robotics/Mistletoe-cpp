@@ -6,13 +6,15 @@ DO NOT MODIFY BY HAND!!!!
 from io import BytesIO
 import struct
 
+import exlcm
+
 class quad_state_t(object):
 
-    __slots__ = ["timestamp", "position", "velocity"]
+    __slots__ = ["timestamp", "position", "velocity", "contacts"]
 
-    __typenames__ = ["int64_t", "double", "double"]
+    __typenames__ = ["int64_t", "double", "double", "exlcm.bool"]
 
-    __dimensions__ = [None, [12], [12]]
+    __dimensions__ = [None, [12], [12], [4]]
 
     def __init__(self):
         self.timestamp = 0
@@ -21,6 +23,8 @@ class quad_state_t(object):
         """ LCM Type: double[12] """
         self.velocity = [ 0.0 for dim0 in range(12) ]
         """ LCM Type: double[12] """
+        self.contacts = [ exlcm.bool() for dim0 in range(4) ]
+        """ LCM Type: exlcm.bool[4] """
 
     def encode(self):
         buf = BytesIO()
@@ -32,6 +36,9 @@ class quad_state_t(object):
         buf.write(struct.pack(">q", self.timestamp))
         buf.write(struct.pack('>12d', *self.position[:12]))
         buf.write(struct.pack('>12d', *self.velocity[:12]))
+        for i0 in range(4):
+            assert self.contacts[i0]._get_packed_fingerprint() == exlcm.bool._get_packed_fingerprint()
+            self.contacts[i0]._encode_one(buf)
 
     @staticmethod
     def decode(data):
@@ -49,12 +56,16 @@ class quad_state_t(object):
         self.timestamp = struct.unpack(">q", buf.read(8))[0]
         self.position = struct.unpack('>12d', buf.read(96))
         self.velocity = struct.unpack('>12d', buf.read(96))
+        self.contacts = []
+        for i0 in range(4):
+            self.contacts.append(exlcm.bool._decode_one(buf))
         return self
 
     @staticmethod
     def _get_hash_recursive(parents):
         if quad_state_t in parents: return 0
-        tmphash = (0x3624c9f3994c9215) & 0xffffffffffffffff
+        newparents = parents + [quad_state_t]
+        tmphash = (0x3886b5a35805f0b1+ exlcm.bool._get_hash_recursive(newparents)) & 0xffffffffffffffff
         tmphash  = (((tmphash<<1)&0xffffffffffffffff) + (tmphash>>63)) & 0xffffffffffffffff
         return tmphash
     _packed_fingerprint = None
