@@ -9,7 +9,6 @@
 
 #include <lcm/lcm_coretypes.h>
 
-#include "exlcm/bool.hpp"
 
 namespace exlcm
 {
@@ -30,9 +29,9 @@ class quad_state_t
         double     velocity[12];
 
         /**
-         * LCM Type: exlcm.bool[4]
+         * LCM Type: boolean[4]
          */
-        exlcm::bool contacts[4];
+        int8_t     contacts[4];
 
     public:
         /**
@@ -139,10 +138,8 @@ int quad_state_t::_encodeNoHash(void *buf, int offset, int maxlen) const
     tlen = __double_encode_array(buf, offset + pos, maxlen - pos, &this->velocity[0], 12);
     if(tlen < 0) return tlen; else pos += tlen;
 
-    for (int a0 = 0; a0 < 4; a0++) {
-        tlen = this->contacts[a0]._encodeNoHash(buf, offset + pos, maxlen - pos);
-        if(tlen < 0) return tlen; else pos += tlen;
-    }
+    tlen = __boolean_encode_array(buf, offset + pos, maxlen - pos, &this->contacts[0], 4);
+    if(tlen < 0) return tlen; else pos += tlen;
 
     return pos;
 }
@@ -160,10 +157,8 @@ int quad_state_t::_decodeNoHash(const void *buf, int offset, int maxlen)
     tlen = __double_decode_array(buf, offset + pos, maxlen - pos, &this->velocity[0], 12);
     if(tlen < 0) return tlen; else pos += tlen;
 
-    for (int a0 = 0; a0 < 4; a0++) {
-        tlen = this->contacts[a0]._decodeNoHash(buf, offset + pos, maxlen - pos);
-        if(tlen < 0) return tlen; else pos += tlen;
-    }
+    tlen = __boolean_decode_array(buf, offset + pos, maxlen - pos, &this->contacts[0], 4);
+    if(tlen < 0) return tlen; else pos += tlen;
 
     return pos;
 }
@@ -174,23 +169,13 @@ int quad_state_t::_getEncodedSizeNoHash() const
     enc_size += __int64_t_encoded_array_size(NULL, 1);
     enc_size += __double_encoded_array_size(NULL, 12);
     enc_size += __double_encoded_array_size(NULL, 12);
-    for (int a0 = 0; a0 < 4; a0++) {
-        enc_size += this->contacts[a0]._getEncodedSizeNoHash();
-    }
+    enc_size += __boolean_encoded_array_size(NULL, 4);
     return enc_size;
 }
 
-uint64_t quad_state_t::_computeHash(const __lcm_hash_ptr *p)
+uint64_t quad_state_t::_computeHash(const __lcm_hash_ptr *)
 {
-    const __lcm_hash_ptr *fp;
-    for(fp = p; fp != NULL; fp = fp->parent)
-        if(fp->v == quad_state_t::getHash)
-            return 0;
-    const __lcm_hash_ptr cp = { p, quad_state_t::getHash };
-
-    uint64_t hash = 0x3886b5a35805f0b1LL +
-         exlcm::bool::_computeHash(&cp);
-
+    uint64_t hash = 0x2272f627bb30065aLL;
     return (hash<<1) + ((hash>>63)&1);
 }
 

@@ -6,6 +6,7 @@
         "vector": "cpp",
         "__split_buffer": "cpp",
         "list": "cpp",
-        "__locale": "cpp"
+        "__locale": "cpp",
+        "__node_handle": "cpp"
     },
 }
