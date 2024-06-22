@@ -59,7 +59,7 @@ std::vector<bool> detect_contact(double l1, double l2, double x_offset, vector<d
 
         Vector3d contact_forces = calculate_force(l1, l2, x_offset, angle_HAA, angle_HFE, angle_KFE, leg_joint_torques);
 
-        contact_vector.push_back(contact_forces.z() > contact_force_threshold);
+        contact_vector.push_back(contact_forces.z() >= contact_force_threshold);
     }
 
     return contact_vector;
