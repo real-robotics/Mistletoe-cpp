@@ -1,0 +1,8 @@
+package exlcm;
+
+struct velocity_command_t
+{
+    double lin_vel_x;
+    double lin_vel_y;
+    double heading;
+}
