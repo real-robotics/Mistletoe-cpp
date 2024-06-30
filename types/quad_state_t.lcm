@@ -5,5 +5,4 @@ struct quad_state_t
     int64_t timestamp;
     double position[12];
     double velocity[12];
-    boolean contacts[4];
 }

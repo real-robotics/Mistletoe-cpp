@@ -126,11 +126,13 @@ int main(int argc, char** argv) {
         .timestamp = std::chrono::system_clock::now().time_since_epoch().count()
     };
 
-    std::vector<double> joint_torques;
-    std::vector<double> joint_positions;
+    // commented out because contact is currently not needed for the observation space of the policy
+
+    // std::vector<double> joint_torques;
+    // std::vector<double> joint_positions;
 
     while (true) {
-        joint_torques.clear();
+        // joint_torques.clear();
 
         for (int i = 0; i < NUM_MOTORS; i++) {
             moteus::Controller controller = controllers.at(i);
@@ -147,15 +149,15 @@ int main(int argc, char** argv) {
             state.position[i] = position;
             state.velocity[i] = velocity;
             
-            joint_torques.push_back(torque);
+            // joint_torques.push_back(torque);
         }
       
-        std::vector<bool> contacts = detect_contact(
-            l1, l2, x_offset, joint_positions, joint_torques, contact_force_threshold 
-        );
+        // std::vector<bool> contacts = detect_contact(
+        //     l1, l2, x_offset, joint_positions, joint_torques, contact_force_threshold 
+        // );
 
-        // copy over the values of contacts into the lcm state array
-        std::copy(contacts.begin(), contacts.end(), state.contacts)
+        // // copy over the values of contacts into the lcm state array
+        // std::copy(contacts.begin(), contacts.end(), state.contacts)
 
         // update the state
         lcm->publish("STATE", &state);
