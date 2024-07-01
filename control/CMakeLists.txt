@@ -50,3 +50,5 @@ target_link_libraries(control example_messages-cpp ${LCM_NAMESPACE}lcm)
 
 target_link_libraries(control pi3hat::pi3hat)
 target_link_libraries(control moteus::cpp)
+
+target_link_libraries(control utils.hpp)

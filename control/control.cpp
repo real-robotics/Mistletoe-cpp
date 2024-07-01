@@ -8,8 +8,12 @@
 #include "exlcm/quad_command_t.hpp"
 #include "exlcm/quad_state_t.hpp"
 
+#include <Eigen/Dense>
+#include "utils.hpp"
+
 #include "moteus.h"
 #include "pi3hat_moteus_transport.h"
+
 
 using namespace mjbots;
 
@@ -21,6 +25,16 @@ const int IDS[] = {
     31, 32, 33, // back left
     41, 42, 43  // back right
 };
+// units in m and N and N-m
+
+// TODO: Use real values from the CAD
+
+const double l1 = 3;
+const double l2 = 3;
+const double x_offset = 3;
+
+const double contact_force_threshold = 1;
+
 
 std::vector<moteus::Controller> controllers;
 
@@ -112,12 +126,20 @@ int main(int argc, char** argv) {
         .timestamp = std::chrono::system_clock::now().time_since_epoch().count()
     };
 
+    // commented out because contact is currently not needed for the observation space of the policy
+
+    // std::vector<double> joint_torques;
+    // std::vector<double> joint_positions;
+
     while (true) {
+        // joint_torques.clear();
+
         for (int i = 0; i < NUM_MOTORS; i++) {
             moteus::Controller controller = controllers.at(i);
             auto maybe_state = controller.SetQuery();
             double position = -1;
             double velocity = -1;
+            double torque = -1;
             if (maybe_state) {
                 moteus::Query::Result state;
                 state = maybe_state->values;
@@ -126,7 +148,16 @@ int main(int argc, char** argv) {
             }
             state.position[i] = position;
             state.velocity[i] = velocity;
+            
+            // joint_torques.push_back(torque);
         }
+      
+        // std::vector<bool> contacts = detect_contact(
+        //     l1, l2, x_offset, joint_positions, joint_torques, contact_force_threshold 
+        // );
+
+        // // copy over the values of contacts into the lcm state array
+        // std::copy(contacts.begin(), contacts.end(), state.contacts)
 
         // update the state
         lcm->publish("STATE", &state);
