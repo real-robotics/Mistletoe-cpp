@@ -5,16 +5,17 @@ import threading
 import numpy as np 
 
 from .BNO055 import BNO055
-from .VelocityTrackingModel import VelocityTrackingModel
-from.StateEstimatorModel import StateEstimatorModel
-
-lock = threading.Lock()
+from .StateEstimatorModel import StateEstimatorModel
+from .PPOActorModel import PPOActorModel
 
 # TODO: put real paths to the models 
+ppo_actor_model = PPOActorModel("/home/easternspork/Test-RKNN_Model/what_the_sigma.rknn")
 state_estimator = StateEstimatorModel("/home/easternspork/Test-RKNN_Model/what_the_sigma.rknn")
 imu = BNO055()
 
 lc = lcm.LCM()
+
+target_joint_pos = []
 
 # observation items size of 48
 # base_lin_vel, base_ang_vel, projected_gravity, velocity command of size 3
@@ -51,9 +52,13 @@ def handle_state(channel, data):
     robot_state["base_lin_vel"] = state_estimator.compute_lin_vel(state_estimator_input)
 
 def handle_velocity_command(channel, data):
-    msg = velocity_command_t.decode(data)
-    robot_state["velocity_command"] = [msg.lin_vel_x, msg.lin_vel_y, msg.heading]
-    
+    velocity_command = velocity_command_t.decode(data)
+    robot_state["velocity_command"] = [velocity_command.lin_vel_x, velocity_command.lin_vel_y, velocity_command.heading]
+    # TODO: double check if matches observation space of RL
+    observation = robot_state["base_lin_vel"] + robot_state["base_ang_vel"] + robot_state["projected_gravity"] + robot_state["velocity_command"] + robot_state["joint_pos"] + robot_state["joint_vel"] + robot_state["prev_action"]
+    target_joint_pos = ppo_actor_model.compute_joint_pos()
+
+# I am somewhat worried that these two will have a large enough time gap between that it woul mess up the sim to real transfer (we assume these infos come at the same time in sim) but maybe not 
 lc.subscribe("STATE", handle_state)
 lc.subscribe("VELOCITY_COMMAND", handle_velocity_command)
 
@@ -68,8 +73,7 @@ try:
     while True:
         msg = quad_command_t()
         msg.timestamp = time.time_ns()
-
-        msg.position = state_estimator.compute_inference(robot_state)
+        msg.position = target_joint_pos
 
         lc.publish("COMMAND", msg.encode())
 
