@@ -3,9 +3,9 @@ import io from 'socket.io-client';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-moment';
 
-import { CategoryScale, LinearScale, Chart } from "chart.js";
+import { CategoryScale, LinearScale, Chart, PointElement, LineElement } from "chart.js";
 
-Chart.register(CategoryScale, LinearScale);
+Chart.register(CategoryScale, LinearScale, PointElement, LineElement);
 
 const socket = io('http://localhost:4000'); // Your WebSocket server URL
 
@@ -25,7 +25,7 @@ const Dashboard = () => {
         velocities: [...prevData.velocities, newData.velocity],
         voltages: [...prevData.voltages, newData.voltage],
       }));
-      if (newData.voltage > 10) {
+      if (newData.voltage > 10) { // Set your voltage threshold here
         setShowWarning(true);
       }
     });
@@ -36,15 +36,15 @@ const Dashboard = () => {
   }, []);
 
   const handleShutdown = () => {
-    fetch('http://localhost:4000/shutdown', { method: 'POST' })
+    fetch('http://localhost:4000/shutdown', { method: 'POST' }) // Your backend shutdown URL
       .then(response => response.json())
       .then(data => console.log(data));
   };
 
-  const jointOptions = ['Joint 1', 'Joint 2', 'Joint 3', 'Joint 4'];
+  const jointOptions = ['Joint 1', 'Joint 2', 'Joint 3', 'Joint 4']; // Add more joints as needed
 
   const chartData = {
-    labels: jointOptions,
+    labels: Array.from({ length: data.positions.length }, (_, i) => i + 1),
     datasets: [
       {
         label: 'Position',
@@ -70,11 +70,11 @@ const Dashboard = () => {
   const options = {
     scales: {
       x: {
-        type: 'category',
+        type: 'category', // Use category scale for categorical labels
         labels: jointOptions,
       },
       y: {
-        beginAtZero: true,
+        beginAtZero: true, // Adjust as needed
       },
     },
   };
