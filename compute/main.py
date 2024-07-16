@@ -11,8 +11,7 @@ from.StateEstimatorModel import StateEstimatorModel
 lock = threading.Lock()
 
 # TODO: put real paths to the models 
-velocity_tracking_model = VelocityTrackingModel("/home/easternspork/Test-RKNN_Model/what_the_sigma.rknn")
-state_estimator = StateEstimatorModel()
+state_estimator = StateEstimatorModel("/home/easternspork/Test-RKNN_Model/what_the_sigma.rknn")
 imu = BNO055()
 
 lc = lcm.LCM()
@@ -41,6 +40,16 @@ def handle_state(channel, data):
     # TODO: actually make this real
     robot_state["prev_action"] = msg.prev_action
 
+    # technically the values get queried sequentially so some values could be more updated than others but whatever I guess
+    robot_state["base_ang_vel"] = imu.get_ang_vel()
+    robot_state["projected_gravity"] = imu.get_projected_gravity()
+
+    #TODO: what happens when the previous action is none ie. when the robot gets initialzied?
+    # also this is kind of disgusting
+    state_estimator_input = robot_state["base_ang_vel"] + robot_state["projected_gravity"] + robot_state["velocity_command"] + robot_state["joint_pos"] + robot_state["joint_vel"] + robot_state["prev_action"]
+
+    robot_state["base_lin_vel"] = state_estimator.compute_lin_vel(state_estimator_input)
+
 def handle_velocity_command(channel, data):
     msg = velocity_command_t.decode(data)
     robot_state["velocity_command"] = [msg.lin_vel_x, msg.lin_vel_y, msg.heading]
@@ -50,21 +59,7 @@ lc.subscribe("VELOCITY_COMMAND", handle_velocity_command)
 
 def handle_lcm():
     while True:
-
-        # lock to ensure that the observation list is fully updated before sending, this could cause performance issues, check later
-        with lock:
-            # technically the values get queried sequentially so some values could be more updated than others but whatever I guess
-            robot_state["base_ang_vel"] = imu.get_ang_vel
-            robot_state["projected_gravity"] = imu.get_projected_gravity
-
-            lc.handle()
-
-            #TODO: what happens when the previous action is none ie. when the robot gets initialzied?
-            # also this is kind of disgusting
-            state_estimator_input = robot_state["base_ang_vel"] + robot_state["projected_gravity"] + robot_state["velocity_command"] + robot_state["joint_pos"] + robot_state["joint_vel"] + robot_state["prev_action"]
-
-            robot_state["base_lin_vel"] = state_estimator.compute_lin_vel(state_estimator_input)
-        
+        lc.handle()
 
 handler_thread = threading.Thread(target=handle_lcm)
 handler_thread.start()
@@ -74,7 +69,7 @@ try:
         msg = quad_command_t()
         msg.timestamp = time.time_ns()
 
-        msg.position = velocity_tracking_model.compute_inference(robot_state)
+        msg.position = state_estimator.compute_inference(robot_state)
 
         lc.publish("COMMAND", msg.encode())
 
