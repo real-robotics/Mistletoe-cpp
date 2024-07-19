@@ -56,7 +56,7 @@ try:
             direction_radians = last_direction_radians
 
         # Print the results
-        msg.timestamp = int(time.time() * 1000000)
+        msg.timestamp = time.time_ns()
         msg.x_velocity = x_velocity
         msg.y_velocity = y_velocity
         msg.heading = direction_radians

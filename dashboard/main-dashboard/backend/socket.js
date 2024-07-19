@@ -1,24 +1,27 @@
 // server.js
-const io = require('socket.io')(4000, {
-    cors: {
-      origin: "http://localhost:3000",
-      methods: ["GET", "POST"]
-    }
+const WebSocket = require('ws');
+
+const wss = new WebSocket.Server({ port: 8080 });
+
+wss.on('connection', (ws) => {
+  console.log('Client connected');
+
+  const sendData = () => {
+    const timestamp = new Date().toISOString();
+    const position = Math.random() * 100;
+    const voltage = Math.random() * 5;
+
+    const data = JSON.stringify({ timestamp, position, voltage });
+
+    ws.send(data);
+  };
+
+  const intervalId = setInterval(sendData, 100);
+
+  ws.on('close', () => {
+    console.log('Client disconnected');
+    clearInterval(intervalId);
   });
-  
-  io.on('connection', (socket) => {
-    console.log('Client connected');
-    
-    setInterval(() => {
-      const data = {
-        position: [Math.random(), Math.random(), Math.random(), Math.random()],
-        velocity: [Math.random(), Math.random(), Math.random(), Math.random()],
-        voltage: [Math.random() * 12, Math.random() * 12, Math.random() * 12, Math.random() * 12],
-      };
-      socket.emit('robot-data', data);
-    }, 1000);
-  
-    socket.on('disconnect', () => {
-      console.log('Client disconnected');
-    });
-  });
+});
+
+console.log('WebSocket server is running on ws://localhost:8080');

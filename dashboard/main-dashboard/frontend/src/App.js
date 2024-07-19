@@ -1,12 +1,15 @@
 // src/App.js
 import React from 'react';
-import Dashboard from './components/Dashboard';
+import Graph from './components/Graph';
 import './App.css';
 
 function App() {
   return (
     <div className="App">
-      <Dashboard />
+      <header className="App-header">
+        <h1>Real-time Data Graph</h1>
+      </header>
+      <Graph />
     </div>
   );
 }
