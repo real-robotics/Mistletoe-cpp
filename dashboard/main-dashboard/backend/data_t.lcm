@@ -1,0 +1,7 @@
+package exlcm;
+
+struct data_t {
+    string timestamp;
+    float position;
+    float voltage;
+}
