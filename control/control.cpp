@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
         // std::copy(contacts.begin(), contacts.end(), state.contacts)
 
         // update the state
-        lcm->publish("STATE", &state);
+        lcm->publish("STATE_C2C", &state);
 
         usleep(10000); // sleep for 10ms
     }

@@ -4,4 +4,4 @@ DO NOT MODIFY BY HAND!!!!
 lcm-gen 1.5.0
 """
 
-from .data_t import data_t
+from .quad_state_t import quad_state_t

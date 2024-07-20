@@ -1,19 +1,19 @@
 import lcm
 import time
-import datetime
+from datetime import datetime
 import random
-from exlcm import data_t
+from exlcm import quad_state_t
 
 def publish_data():
     lc = lcm.LCM()
-    msg = data_t()
+    msg = quad_state_t()
 
     while True:
-        msg.timestamp = datetime.datetime.utcnow().isoformat()
-        msg.position = random.random() * 100
-        msg.voltage = random.random() * 5
+        msg.timestamp = int(time.time() * 1e6)
+        msg.position = [random.random() * 5 for _ in range(12)]
+        msg.velocity = [random.random() * 5 for _ in range(12)]
 
-        lc.publish("EXAMPLE", msg.encode())
+        lc.publish("STATE_C2D", msg.encode())
         time.sleep(0.1)
 
 if __name__ == "__main__":

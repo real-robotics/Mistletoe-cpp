@@ -56,10 +56,11 @@ def handle_velocity_command(channel, data):
     robot_state["velocity_command"] = [velocity_command.lin_vel_x, velocity_command.lin_vel_y, velocity_command.heading]
     # TODO: double check if matches observation space of RL
     observation = robot_state["base_lin_vel"] + robot_state["base_ang_vel"] + robot_state["projected_gravity"] + robot_state["velocity_command"] + robot_state["joint_pos"] + robot_state["joint_vel"] + robot_state["prev_action"]
+    # scope might be weird (?)
     target_joint_pos = ppo_actor_model.compute_joint_pos()
 
 # I am somewhat worried that these two will have a large enough time gap between that it woul mess up the sim to real transfer (we assume these infos come at the same time in sim) but maybe not 
-lc.subscribe("STATE", handle_state)
+lc.subscribe("STATE_C2C", handle_state)
 lc.subscribe("VELOCITY_COMMAND", handle_velocity_command)
 
 def handle_lcm():
@@ -71,11 +72,17 @@ handler_thread.start()
 
 try:
     while True:
-        msg = quad_command_t()
-        msg.timestamp = time.time_ns()
-        msg.position = target_joint_pos
+        command_msg = quad_command_t()
+        command_msg.timestamp = time.time_ns()
+        command_msg.position = target_joint_pos
 
-        lc.publish("COMMAND", msg.encode())
+        state_c2d_msg = quad_state_t()
+        state_c2d_msg.timestamp = time.time_ns()
+        state_c2d_msg.position = robot_state["joint_pos"]
+        state_c2d_msg.velocity = robot_state["joint_vel"]
+
+        lc.publish("COMMAND", command_msg.encode())
+        lc.publish("STATE_C2D", state_c2d_msg.encode())
 
         time.sleep(0.1)
 

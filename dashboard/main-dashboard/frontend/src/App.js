@@ -1,17 +1,25 @@
 // src/App.js
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Graph from './components/Graph';
-import './App.css';
+import ToggleButton from './components/ToggleButton';
+import { connectWebSocket } from './components/websocket';
 
-function App() {
+const App = () => {
+  const [socket, setSocket] = useState(null);
+
+  useEffect(() => {
+    const socketConnection = connectWebSocket('ws://localhost:8080', (data) => {
+      // Handle incoming messages and update the Graph component as needed
+    });
+    setSocket(socketConnection);
+  }, []);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Real-time Data Graph</h1>
-      </header>
-      <Graph />
+    <div>
+      <Graph socket={socket} />
+      <ToggleButton socket={socket} />
     </div>
   );
-}
+};
 
 export default App;
