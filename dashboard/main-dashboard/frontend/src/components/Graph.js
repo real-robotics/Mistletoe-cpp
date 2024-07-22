@@ -6,7 +6,7 @@ import 'chartjs-adapter-date-fns';
 
 Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale);
 
-const Graph = ({ socket }) => {
+const Graph = ({ socketData }) => {
   const [selectedPair, setSelectedPair] = useState(2);
   const [data, setData] = useState({
     labels: [],
@@ -29,44 +29,29 @@ const Graph = ({ socket }) => {
   
 
   useEffect(() => {
-    if (socket) {
-      socket.onmessage = (event) => {
-        console.log('dd')
-        const newData = JSON.parse(event.data);
-        setData((prevData) => {
-          const newLabels = [...prevData.labels, newData.timestamp];
-          const newPositionData = [...prevData.datasets[0].data, newData.position[selectedPair]];
-          const newVelocityData = [...prevData.datasets[1].data, newData.velocity[selectedPair]];
-          
-          return {
-            labels: newLabels.slice(-20), // Keep the last 20 labels
-            datasets: [
-              {
-                ...prevData.datasets[0],
-                data: newPositionData.slice(-20), // Keep the last 20 data points for Position
-              },
-              {
-                ...prevData.datasets[1],
-                data: newVelocityData.slice(-20), // Keep the last 20 data points for Velocity
-              },
-            ],
-          };
-        });
-      };
+    if (socketData) {
+      const newData = socketData;
+      setData((prevData) => {
+        const newLabels = [...prevData.labels, newData.timestamp];
+        const newPositionData = [...prevData.datasets[0].data, newData.position[selectedPair]];
+        const newVelocityData = [...prevData.datasets[1].data, newData.velocity[selectedPair]];
+        
+        return {
+          labels: newLabels.slice(-20), // Keep the last 20 labels
+          datasets: [
+            {
+              ...prevData.datasets[0],
+              data: newPositionData.slice(-20), // Keep the last 20 data points for Position
+            },
+            {
+              ...prevData.datasets[1],
+              data: newVelocityData.slice(-20), // Keep the last 20 data points for Velocity
+            },
+          ],
+        };
+      });
     }
-  }, [socket, selectedPair]);
-  
-  // // clean exiting of socket
-
-  // useEffect(() => {
-  //   return () => {
-  //     if (socket) {
-  //       socket.close();
-  //     }
-  //   };
-  // }, [socket])
-
-  // reset data when switching pairs
+  }, [socketData, selectedPair]);
 
   useEffect(() => {
     setData({

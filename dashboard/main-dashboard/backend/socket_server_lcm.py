@@ -19,7 +19,9 @@ class DataHandler:
         self.data = {
             "timestamp": message.timestamp,  # Assuming 'timestamp' field in data_t
             "position": message.position,    # Assuming 'position' field in data_t
-            "velocity": message.velocity       # Assuming 'velocity' field in data_t
+            "velocity": message.velocity,       # Assuming 'velocity' field in data_t
+            "bus_voltage": message.bus_voltage,
+            "fault_code": message.fault_code
         }
 
     def get_data(self):

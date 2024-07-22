@@ -28,6 +28,10 @@ class quad_state_t
          */
         double     velocity[12];
 
+        double     bus_voltage;
+
+        int8_t     fault_code;
+
     public:
         /**
          * Encode a message into binary form.
@@ -133,6 +137,12 @@ int quad_state_t::_encodeNoHash(void *buf, int offset, int maxlen) const
     tlen = __double_encode_array(buf, offset + pos, maxlen - pos, &this->velocity[0], 12);
     if(tlen < 0) return tlen; else pos += tlen;
 
+    tlen = __double_encode_array(buf, offset + pos, maxlen - pos, &this->bus_voltage, 1);
+    if(tlen < 0) return tlen; else pos += tlen;
+
+    tlen = __int8_t_encode_array(buf, offset + pos, maxlen - pos, &this->fault_code, 1);
+    if(tlen < 0) return tlen; else pos += tlen;
+
     return pos;
 }
 
@@ -149,6 +159,12 @@ int quad_state_t::_decodeNoHash(const void *buf, int offset, int maxlen)
     tlen = __double_decode_array(buf, offset + pos, maxlen - pos, &this->velocity[0], 12);
     if(tlen < 0) return tlen; else pos += tlen;
 
+    tlen = __double_decode_array(buf, offset + pos, maxlen - pos, &this->bus_voltage, 1);
+    if(tlen < 0) return tlen; else pos += tlen;
+
+    tlen = __int8_t_decode_array(buf, offset + pos, maxlen - pos, &this->fault_code, 1);
+    if(tlen < 0) return tlen; else pos += tlen;
+
     return pos;
 }
 
@@ -158,12 +174,14 @@ int quad_state_t::_getEncodedSizeNoHash() const
     enc_size += __int64_t_encoded_array_size(NULL, 1);
     enc_size += __double_encoded_array_size(NULL, 12);
     enc_size += __double_encoded_array_size(NULL, 12);
+    enc_size += __double_encoded_array_size(NULL, 1);
+    enc_size += __int8_t_encoded_array_size(NULL, 1);
     return enc_size;
 }
 
 uint64_t quad_state_t::_computeHash(const __lcm_hash_ptr *)
 {
-    uint64_t hash = 0x3624c9f3994c9215LL;
+    uint64_t hash = 0xfa357a0089c600a1LL;
     return (hash<<1) + ((hash>>63)&1);
 }
 

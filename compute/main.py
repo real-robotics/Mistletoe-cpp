@@ -28,7 +28,9 @@ robot_state = {
     "velocity_command" : [],
     "joint_pos": [],
     "joint_vel": [],
-    "prev_action": []
+    "prev_action": [],
+    "bus_voltage": 0,
+    "fault_code": 0,
 }
 
 # initailze to zeros, don't know how good this actually is
@@ -36,6 +38,8 @@ prev_action = np.zeros(12)
 
 def handle_state(channel, data):
     msg = quad_state_t.decode(data)
+    robot_state["bus_voltage"] = msg.bus_voltage
+    robot_state["fault_code"] = msg.fault_code
     robot_state["joint_pos"] = msg.position
     robot_state["joint_vel"] = msg.velocity
     # TODO: actually make this real
@@ -80,6 +84,8 @@ try:
         state_c2d_msg.timestamp = time.time_ns()
         state_c2d_msg.position = robot_state["joint_pos"]
         state_c2d_msg.velocity = robot_state["joint_vel"]
+        state_c2d_msg.bus_voltage = robot_state["bus_voltage"]
+        state_c2d_msg.fault_code = robot_state["fault_code"]
 
         lc.publish("COMMAND", command_msg.encode())
         lc.publish("STATE_C2D", state_c2d_msg.encode())

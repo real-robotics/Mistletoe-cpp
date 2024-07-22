@@ -5,4 +5,6 @@ struct quad_state_t
     int64_t timestamp;
     double position[12];
     double velocity[12];
+    double bus_voltage;
+    int8_t fault_code;
 }

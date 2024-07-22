@@ -1,15 +1,18 @@
 // src/ToggleButton.js
-import React, { useState } from 'react';
-import { sendWebSocketMessage } from './websocket';
 
-const ToggleButton = ({ socket }) => {
+import React, { useState } from 'react';
+import { sendWebSocketMessage } from '../utils/websocket';
+
+const ToggleButton = ({ socket, socketData }) => {
   const [isEnabled, setIsEnabled] = useState(false);
 
   const toggleButton = () => {
-    const newState = !isEnabled;
-    setIsEnabled(newState);
-    if (socket) {
-      sendWebSocketMessage(socket, { type: 'toggleButton', enabled: newState });
+    if (socketData && socketData.fault_code === 0) {
+      const newState = !isEnabled;
+      setIsEnabled(newState);
+      if (socket) {
+        sendWebSocketMessage(socket, { type: 'toggleButton', enabled: newState });
+      }  
     }
   };
 

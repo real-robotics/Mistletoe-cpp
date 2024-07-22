@@ -8,11 +8,11 @@ import struct
 
 class quad_state_t(object):
 
-    __slots__ = ["timestamp", "position", "velocity"]
+    __slots__ = ["timestamp", "position", "velocity", "bus_voltage", "fault_code"]
 
-    __typenames__ = ["int64_t", "double", "double"]
+    __typenames__ = ["int64_t", "double", "double", "double", "int8_t"]
 
-    __dimensions__ = [None, [12], [12]]
+    __dimensions__ = [None, [12], [12], None, None]
 
     def __init__(self):
         self.timestamp = 0
@@ -21,6 +21,10 @@ class quad_state_t(object):
         """ LCM Type: double[12] """
         self.velocity = [ 0.0 for dim0 in range(12) ]
         """ LCM Type: double[12] """
+        self.bus_voltage = 0.0
+        """ LCM Type: double """
+        self.fault_code = 0
+        """ LCM Type: int8_t """
 
     def encode(self):
         buf = BytesIO()
@@ -32,6 +36,7 @@ class quad_state_t(object):
         buf.write(struct.pack(">q", self.timestamp))
         buf.write(struct.pack('>12d', *self.position[:12]))
         buf.write(struct.pack('>12d', *self.velocity[:12]))
+        buf.write(struct.pack(">db", self.bus_voltage, self.fault_code))
 
     @staticmethod
     def decode(data):
@@ -49,12 +54,13 @@ class quad_state_t(object):
         self.timestamp = struct.unpack(">q", buf.read(8))[0]
         self.position = struct.unpack('>12d', buf.read(96))
         self.velocity = struct.unpack('>12d', buf.read(96))
+        self.bus_voltage, self.fault_code = struct.unpack(">db", buf.read(9))
         return self
 
     @staticmethod
     def _get_hash_recursive(parents):
         if quad_state_t in parents: return 0
-        tmphash = (0x3624c9f3994c9215) & 0xffffffffffffffff
+        tmphash = (0xfa357a0089c600a1) & 0xffffffffffffffff
         tmphash  = (((tmphash<<1)&0xffffffffffffffff) + (tmphash>>63)) & 0xffffffffffffffff
         return tmphash
     _packed_fingerprint = None
