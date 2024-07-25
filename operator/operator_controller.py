@@ -5,7 +5,7 @@ import time
 
 from exlcm import velocity_command_t
 
-lc = lcm.LCM()
+lc = lcm.LCM("udpm://239.255.76.67:7667?ttl=1")
 msg = velocity_command_t()
 
 # Initialize Pygame
