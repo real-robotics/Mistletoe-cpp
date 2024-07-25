@@ -111,9 +111,9 @@ int main(int argc, char** argv) {
         controller.SetStop();
     }
 
-    // LCM Initialization
+    // LCM Initialization with config to ensure packets published will enter local network
 
-    lcm::LCM *lcm = new lcm::LCM();
+    lcm::LCM *lcm = new lcm::LCM("udpm://239.255.76.67:7667?ttl=1");
 
     if (!lcm->good())
         return 1;
