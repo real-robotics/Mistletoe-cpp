@@ -9,6 +9,7 @@
 #include <lcm/lcm-cpp.hpp>
 #include "exlcm/quad_command_t.hpp"
 #include "exlcm/quad_state_t.hpp"
+#include "exlcm/enabled_t.hpp"
 
 #include <Eigen/Dense>
 #include "utils.hpp"
@@ -43,7 +44,7 @@ std::vector<moteus::Controller> controllers;
 class Handler {
   public:
     ~Handler() {}
-    void handleMessage(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
+    void handleControlCommand(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
                        const exlcm::quad_command_t *msg)
     {
         std::cout << "Received Message on Channel: " << chan << std::endl;
@@ -58,6 +59,12 @@ class Handler {
         // }
         
         std::cout << std::endl;
+    }
+
+    void handleEnable(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
+                       const exlcm::quad_command_t *msg)
+    {
+        std::cout << "Current enabled status:" << msg->enabled << std::endl;
     }
 };
 
@@ -119,7 +126,8 @@ int main(int argc, char** argv) {
         return 1;
 
     Handler handlerObject;
-    lcm->subscribe("COMMAND", &Handler::handleMessage, &handlerObject);
+    lcm->subscribe("COMMAND", &Handler::handleControlCommand, &handlerObject);
+    lcm->subscribe("ENABLE", &Handler::handleEnable, &handlerObject);
 
     std::thread thread(handle_lcm, lcm);
     thread.detach();

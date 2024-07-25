@@ -1,0 +1,6 @@
+package exlcm;
+
+struct enabled_t
+{
+    boolean enabled;
+}

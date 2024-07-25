@@ -4,13 +4,14 @@ import threading
 import lcm
 import websockets
 from concurrent.futures import ThreadPoolExecutor
-from exlcm import quad_state_t  # Import your LCM message type
+from exlcm import quad_state_t, enabled_t # Import your LCM message type
 
 # LCM message handler
 class DataHandler:
     def __init__(self):
         self.data = None
         self.boolean_data = None  # For receiving boolean data
+        self.lc = lcm.LCM("udpm://239.255.76.67:7667?ttl=1")
 
     def handle_message(self, channel, data):
         # Decode LCM message
@@ -30,7 +31,10 @@ class DataHandler:
     def handle_websocket_message(self, message):
         # Handle received WebSocket message (expected to be a boolean)
         self.boolean_data = json.loads(message)
-        print(f"Received boolean data: {self.boolean_data}")
+        enable_command = enabled_t()
+        enable_command.enabled = self.boolean_data
+        self.lc.publish("ENABLED", enable_command)
+        print(f"Published boolean data: {self.boolean_data}")
 
 data_handler = DataHandler()
 
