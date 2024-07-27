@@ -10,8 +10,11 @@ from exlcm import quad_state_t, enabled_t # Import your LCM message type
 class DataHandler:
     def __init__(self):
         self.data = None
+        self.enabled = False
         self.boolean_data = None  # For receiving boolean data
-        self.lc = lcm.LCM("udpm://239.255.76.67:7667?ttl=1")
+        self.lc = lcm.LCM(
+            # "udpm://239.255.76.67:7667?ttl=1"
+            )
 
     def handle_message(self, channel, data):
         # Decode LCM message
@@ -22,8 +25,10 @@ class DataHandler:
             "position": message.position,    # Assuming 'position' field in data_t
             "velocity": message.velocity,       # Assuming 'velocity' field in data_t
             "bus_voltage": message.bus_voltage,
-            "fault_code": message.fault_code
+            "fault_code": message.fault_code,
+            "enabled": self.enabled
         }
+        # print('recieved lcm message')
 
     def get_data(self):
         return self.data
@@ -32,15 +37,18 @@ class DataHandler:
         # Handle received WebSocket message (expected to be a boolean)
         self.boolean_data = json.loads(message)
         enable_command = enabled_t()
-        enable_command.enabled = self.boolean_data
-        self.lc.publish("ENABLED", enable_command)
+        enable_command.enabled = self.boolean_data['enabled']
+        self.lc.publish("ENABLED", enable_command.encode())
+        self.enabled = self.boolean_data['enabled']
         print(f"Published boolean data: {self.boolean_data}")
 
 data_handler = DataHandler()
 
 # Function to run LCM in a separate thread
 def run_lcm():
-    lc = lcm.LCM("udpm://239.255.76.67:7667?ttl=1")
+    lc = lcm.LCM(
+        # "udpm://239.255.76.67:7667?ttl=1"
+        )
     lc.subscribe("STATE_C2D", data_handler.handle_message)
     while True:
         lc.handle()
@@ -54,6 +62,8 @@ async def send_data(websocket):
         # Send data over WebSocket
         data = json.dumps(data_handler.get_data())
         await websocket.send(data)
+
+        # print('data sent')
         
         await asyncio.sleep(0.1)  # Send data every 100 milliseconds
 

@@ -1,4 +1,4 @@
-// src/websocket.js
+// src/utils/websocket.js
 export const connectWebSocket = (url, onMessageCallback) => {
   const socket = new WebSocket(url);
   socket.onmessage = (event) => {

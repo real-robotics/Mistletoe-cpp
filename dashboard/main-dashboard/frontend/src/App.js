@@ -1,10 +1,7 @@
-// src/App.js
 import React, { useEffect, useState } from 'react';
-import Graph from './components/Graph';
-import ToggleButton from './components/ToggleButton';
-import BusVoltageDisplay from './components/BusVoltageDisplay';
-import FaultMessage from './components/FaultDisplay';
+import MainContainer from './MainContainer';
 import { connectWebSocket } from './utils/websocket';
+import './styles.css';
 
 const App = () => {
   const [socket, setSocket] = useState(null);
@@ -17,14 +14,7 @@ const App = () => {
     setSocket(socketConnection);
   }, []);
 
-  return (
-    <div>
-      <Graph socketData={socketData}/>
-      <ToggleButton socket={socket} socketData={socketData}/>
-      <BusVoltageDisplay socketData={socketData}/>
-      <FaultMessage socketData={socketData}/>
-    </div>
-  );
+  return <MainContainer socketData={socketData} socket={socket} />;
 };
 
 export default App;
