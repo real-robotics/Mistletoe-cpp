@@ -52,7 +52,7 @@ def run_lcm():
     lc = lcm.LCM(
         # "udpm://239.255.76.67:7667?ttl=1"
         )
-    lc.subscribe("STATE_C2D", data_handler.handle_message)
+    lc.subscribe("STATE_C2C", data_handler.handle_message)
     while True:
         lc.handle()
 

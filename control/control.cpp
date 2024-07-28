@@ -97,9 +97,11 @@ int main(int argc, char** argv) {
 
     for (int i = 0; i < NUM_MOTORS; i++) {
         int id = IDS[i];
-
         moteus::Controller::Options options;
         options.id = id;
+        moteus::Query::Format query_format;
+        query_format.voltage = moteus::Resolution::kFloat;
+        options.query_format = query_format;
 
         controllers.push_back(
             moteus::Controller(options)
@@ -150,7 +152,6 @@ int main(int argc, char** argv) {
 
         for (int i = 0; i < NUM_MOTORS; i++) {
             moteus::Controller controller = controllers.at(i);
-            // TODO: increase query resolution to INT32 using something like cmd.query.position = mjbots::moteus::Resolution::kFloat; when making real position commands
             auto maybe_state = controller.SetQuery();
             double position = -1;
             double velocity = -1;
