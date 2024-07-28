@@ -6,6 +6,8 @@ import websockets
 from concurrent.futures import ThreadPoolExecutor
 from exlcm import quad_state_t, enabled_t # Import your LCM message type
 
+# TODO: refractor bad GPT code to make more sense
+
 # LCM message handler
 class DataHandler:
     def __init__(self):
@@ -13,7 +15,7 @@ class DataHandler:
         self.enabled = False
         self.boolean_data = None  # For receiving boolean data
         self.lc = lcm.LCM(
-            # "udpm://239.255.76.67:7667?ttl=1"
+            "udpm://239.255.76.67:7667?ttl=1"
             )
 
     def handle_message(self, channel, data):
@@ -29,6 +31,7 @@ class DataHandler:
             "enabled": self.enabled
         }
         # print('recieved lcm message')
+        print(message.position)
 
     def get_data(self):
         return self.data

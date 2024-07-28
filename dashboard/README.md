@@ -9,9 +9,7 @@ Ensure you have the dependecies of the backend by enter the `main-dashboard/back
 and also make sure you have LCM installed.  
 ## Running the Main Dashboard  
 ### Running dashboard with robot
-Enter the `main-dashboard/frontend` directory and run:
-`npm start`  
-to start the frontend server.  
+Enter the `main-dashboard/frontend` directory and run `npm start` to start the frontend server.  
 In a seperate terminal, enter the `main-dashboard/backend` directory and run the `socket_server_lcm.py` file.
 ### Running dashboard without robot  
 In the case in which you want to test out the dashboard without the robot enabled (ie. during development), you can run the `lcm_publisher_test.py` file which publishes random data to the required LCM channels.

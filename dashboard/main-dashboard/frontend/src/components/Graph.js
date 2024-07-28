@@ -48,6 +48,7 @@ const Graph = ({ socketData }) => {
   useEffect(() => {
     if (socketData) {
       const newData = socketData;
+      console.log(newData)
       setData((prevData) => {
         const newLabels = [...prevData.labels, newData.timestamp];
         const newPositionData = [

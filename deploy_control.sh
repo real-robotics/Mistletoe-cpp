@@ -7,3 +7,4 @@ rsync -av --exclude='build' ./control/ ./deploy/
 
 # Securely copy the deploy directory to the remote Raspberry Pi
 scp -r ./deploy easternspork@192.168.1.146:/home/easternspork/
+ssh -t easternspork@192.168.1.146 'cd deploy; sh build.sh; echo "build finished"'

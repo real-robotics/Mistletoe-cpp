@@ -13,7 +13,7 @@ def publish_data():
 
     while True:
         msg.timestamp = int(time.time() * 1e6)
-        msg.position = [random.random() * 5 for _ in range(12)]
+        msg.position = [-0.185 for _ in range(12)]
         msg.velocity = [random.random() * 5 for _ in range(12)]
         msg.bus_voltage = 22
         msg.fault_code = 0
