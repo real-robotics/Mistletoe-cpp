@@ -71,7 +71,7 @@ def handle_velocity_command(channel, data):
     global velocity_command
 
     velocity_command_msg = velocity_command_t.decode(data)
-    velocity_command = [velocity_command_msg.lin_vel_x, velocity_command_msg.lin_vel_y, velocity_command_msg.heading]
+    velocity_command = [velocity_command_msg.lin_vel_x, velocity_command_msg.lin_vel_y, velocity_command_msg.ang_vel_z]
 
 lc.subscribe("STATE_C2C", handle_state)
 lc.subscribe("VELOCITY_COMMAND", handle_velocity_command)
