@@ -5,6 +5,9 @@ import time
 
 from exlcm import velocity_command_t
 
+# TODO: max angular velocity in the z axis
+MAX_ANG_VEL_Z = 1
+
 lc = lcm.LCM()
 msg = velocity_command_t()
 
@@ -32,7 +35,7 @@ def get_direction_in_radians(x, y):
 last_direction_radians = 0
 
 # joystick threshold
-threshold = 0.1
+threshold = 0.05
 
 try:
     while True:
@@ -45,21 +48,15 @@ try:
         x_velocity = joystick.get_axis(0)  # X-axis of the first joystick
         y_velocity = joystick.get_axis(1)  # Y-axis of the first joystick
 
-        x_heading = joystick.get_axis(2)  # X-axis of the second joystick
-        y_heading = joystick.get_axis(3)  # Y-axis of the second joystick
-
-        # Calculate direction in radians
-        if x_heading > threshold or y_heading > threshold:
-            direction_radians = get_direction_in_radians(x_heading, y_heading)
-            last_direction_radians = direction_radians
-        else:
-            direction_radians = last_direction_radians
+        ang_vel_z = joystick.get_axis(2) * MAX_ANG_VEL_Z
 
         # Print the results
         msg.timestamp = time.time_ns()
-        msg.x_velocity = x_velocity
-        msg.y_velocity = y_velocity
-        msg.heading = direction_radians
+        msg.lin_vel_x = x_velocity
+        msg.lin_vel_y = y_velocity
+        msg.ang_vel_z = ang_vel_z
+        print(y_velocity)
+        # print(ang_vel_z)
         lc.publish("VELOCITY_COMMAND", msg.encode())
 
         pygame.time.wait(100)  # Wait for 100 milliseconds

@@ -57,7 +57,7 @@ def handle_state(channel, data):
 
 def handle_velocity_command(channel, data):
     velocity_command = velocity_command_t.decode(data)
-    robot_state["velocity_command"] = [velocity_command.lin_vel_x, velocity_command.lin_vel_y, velocity_command.heading]
+    robot_state["velocity_command"] = [velocity_command.lin_vel_x, velocity_command.lin_vel_y, velocity_command.ang_vel_z]
     # TODO: double check if matches observation space of RL
     observation = robot_state["base_lin_vel"] + robot_state["base_ang_vel"] + robot_state["projected_gravity"] + robot_state["velocity_command"] + robot_state["joint_pos"] + robot_state["joint_vel"] + robot_state["prev_action"]
     # scope might be weird (?)

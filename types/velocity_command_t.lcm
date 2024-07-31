@@ -2,7 +2,8 @@ package exlcm;
 
 struct velocity_command_t
 {
+    int64_t timestamp;
     double lin_vel_x;
     double lin_vel_y;
-    double heading;
+    double ang_vel_z;
 }
