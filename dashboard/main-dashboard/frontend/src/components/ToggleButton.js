@@ -1,5 +1,3 @@
-// src/ToggleButton.js
-
 import React, { useState } from 'react';
 import { sendWebSocketMessage } from '../utils/websocket';
 
@@ -7,19 +5,19 @@ const ToggleButton = ({ socket, socketData }) => {
   const [isEnabled, setIsEnabled] = useState(false);
 
   const toggleButton = () => {
-    if (socketData && socketData.fault_code === 0) {
-      const newState = !isEnabled;
-      setIsEnabled(newState);
-      if (socket) {
-        sendWebSocketMessage(socket, { type: 'toggleButton', enabled: newState });
-      }  
-    }
+    const newStatus = !isEnabled;
+    setIsEnabled(newStatus);
+    sendWebSocketMessage(socket, { enabled: newStatus });
   };
 
   return (
     <button
       onClick={toggleButton}
-      style={{ backgroundColor: isEnabled ? 'green' : 'red', color: 'white' }}
+      style={{
+        backgroundColor: isEnabled ? 'green' : 'red',
+        color: 'white',
+      }}
+      className="button"
     >
       {isEnabled ? 'Enabled' : 'Disabled'}
     </button>

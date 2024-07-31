@@ -1,10 +1,29 @@
-// src/Graph.js
 import React, { useEffect, useState } from 'react';
 import { Line } from 'react-chartjs-2';
-import { Chart, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale } from 'chart.js';
+import {
+  Chart,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  TimeScale,
+} from 'chart.js';
 import 'chartjs-adapter-date-fns';
+import '../styles.css';
 
-Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, TimeScale);
+Chart.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  TimeScale
+);
 
 const Graph = ({ socketData }) => {
   const [selectedPair, setSelectedPair] = useState(2);
@@ -26,16 +45,21 @@ const Graph = ({ socketData }) => {
     ],
   });
 
-  
-
   useEffect(() => {
     if (socketData) {
       const newData = socketData;
+      console.log(newData)
       setData((prevData) => {
         const newLabels = [...prevData.labels, newData.timestamp];
-        const newPositionData = [...prevData.datasets[0].data, newData.position[selectedPair]];
-        const newVelocityData = [...prevData.datasets[1].data, newData.velocity[selectedPair]];
-        
+        const newPositionData = [
+          ...prevData.datasets[0].data,
+          newData.position[selectedPair],
+        ];
+        const newVelocityData = [
+          ...prevData.datasets[1].data,
+          newData.velocity[selectedPair],
+        ];
+
         return {
           labels: newLabels.slice(-20), // Keep the last 20 labels
           datasets: [
@@ -70,27 +94,28 @@ const Graph = ({ socketData }) => {
           backgroundColor: 'rgba(192, 75, 75, 0.2)',
         },
       ],
-    })
-  }, [selectedPair])
-
+    });
+  }, [selectedPair]);
 
   const handleChange = (event) => {
     setSelectedPair(parseInt(event.target.value));
   };
-  
+
   return (
     <div>
       <div>
-        <label htmlFor="pair-select">Choose a pair:</label>
-        <select id="pair-select" onChange={handleChange} value={selectedPair}>
+        <label htmlFor="joint-select" className="label">
+          Choose a Joint to Monitor:
+        </label>
+        <select id="joint-select" onChange={handleChange} value={selectedPair}>
           {Array.from({ length: 12 }, (_, i) => (
             <option key={i} value={i}>
-              Pair {i + 1}
+              Joint {i + 1}
             </option>
           ))}
         </select>
       </div>
-      <div style={{ width: '600px', height: '400px' }}>
+      <div className="graph-container">
         <Line
           data={data}
           options={{

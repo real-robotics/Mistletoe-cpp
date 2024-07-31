@@ -9,6 +9,7 @@
 #include <lcm/lcm-cpp.hpp>
 #include "exlcm/quad_command_t.hpp"
 #include "exlcm/quad_state_t.hpp"
+#include "exlcm/enabled_t.hpp"
 
 #include <Eigen/Dense>
 #include "utils.hpp"
@@ -43,7 +44,7 @@ std::vector<moteus::Controller> controllers;
 class Handler {
   public:
     ~Handler() {}
-    void handleMessage(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
+    void handleControlCommand(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
                        const exlcm::quad_command_t *msg)
     {
         std::cout << "Received Message on Channel: " << chan << std::endl;
@@ -58,6 +59,15 @@ class Handler {
         // }
         
         std::cout << std::endl;
+    }
+
+    void handleEnable(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
+                       const exlcm::enabled_t *msg)
+    {
+        std::cout << "Received Message on Channel: " << chan << std::endl;
+
+        // TODO: msg.enabled status is not printed (only the string part)
+        std::cout << "Current enabled status:" << msg->enabled << std::endl;
     }
 };
 
@@ -87,9 +97,11 @@ int main(int argc, char** argv) {
 
     for (int i = 0; i < NUM_MOTORS; i++) {
         int id = IDS[i];
-
         moteus::Controller::Options options;
         options.id = id;
+        moteus::Query::Format query_format;
+        query_format.voltage = moteus::Resolution::kFloat;
+        options.query_format = query_format;
 
         controllers.push_back(
             moteus::Controller(options)
@@ -111,18 +123,20 @@ int main(int argc, char** argv) {
         controller.SetStop();
     }
 
-    // LCM Initialization
+    // LCM Initialization with config to ensure packets published will enter local network
 
-    lcm::LCM *lcm = new lcm::LCM();
+    lcm::LCM *lcm = new lcm::LCM("udpm://239.255.76.67:7667?ttl=1");
 
     if (!lcm->good())
         return 1;
 
     Handler handlerObject;
-    lcm->subscribe("COMMAND", &Handler::handleMessage, &handlerObject);
+    lcm->subscribe("COMMAND", &Handler::handleControlCommand, &handlerObject);
+    lcm->subscribe("ENABLED", &Handler::handleEnable, &handlerObject);
 
     std::thread thread(handle_lcm, lcm);
     thread.detach();
+
 
     exlcm::quad_state_t state = {
         .timestamp = std::chrono::system_clock::now().time_since_epoch().count()
@@ -142,14 +156,22 @@ int main(int argc, char** argv) {
             double position = -1;
             double velocity = -1;
             double torque = -1;
+            double bus_voltage = -1;
             if (maybe_state) {
                 moteus::Query::Result state;
                 state = maybe_state->values;
                 position = state.position;
                 velocity = state.velocity;
+                bus_voltage = state.voltage;
             }
             state.position[i] = position;
             state.velocity[i] = velocity;
+
+            // TODO: make real
+            if (i == 2) {
+                state.bus_voltage = bus_voltage; 
+            }
+            state.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
             
             // joint_torques.push_back(torque);
         }

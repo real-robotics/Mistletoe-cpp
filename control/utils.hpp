@@ -5,7 +5,7 @@ using namespace Eigen;
 using namespace std;
 
 double revs_to_radians(double angle_rev) {
-    M_PI * 2 * angle_rev;
+    return M_PI * 2 * angle_rev;
 }
 
 Matrix<double, 3, 3> calculate_jacobian(double l1, double l2, double x_offset, double theta_1, double theta_2, double theta_3) {

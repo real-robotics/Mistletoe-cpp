@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(control)
 
+set(CMAKE_CXX_FLAGS "-march=native -mcpu=native -mtune=native")
+
 # Find LCM
 find_package(lcm REQUIRED)
 include(${LCM_USE_FILE})
@@ -51,4 +53,6 @@ target_link_libraries(control example_messages-cpp ${LCM_NAMESPACE}lcm)
 target_link_libraries(control pi3hat::pi3hat)
 target_link_libraries(control moteus::cpp)
 
-target_link_libraries(control utils.hpp)
+find_package(Eigen3 REQUIRED NO_MODULE)
+target_link_libraries(control Eigen3::Eigen)
+

@@ -5,3 +5,5 @@ lcm-gen 1.5.0
 """
 
 from .quad_state_t import quad_state_t
+from .velocity_command_t import velocity_command_t
+from .enabled_t import enabled_t
