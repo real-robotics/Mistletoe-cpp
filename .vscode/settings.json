@@ -84,4 +84,9 @@
         "*.txx": "cpp",
         "*.ipp": "cpp"
     },
+    "spellright.language": [],
+    "spellright.documentTypes": [
+        "latex",
+        "plaintext"
+    ],
 }

@@ -1,12 +1,16 @@
 # Dashboard Module  
 This module is intended to be run on a control computer than connects to the onboard system modules of the quad wirelessly.  
-![alt text](docs/image.png)  
+
+![Sample image of dashboard](docs/image.png)  
+
+<div align="center">
+  <caption>Note: Sample image uses random values.</caption>
+</div>
+
 ## Installation Steps  
-Enter the `main-dashboard/frontend` directory and run:  
-`npm install`  
-Ensure you have the dependecies of the backend by enter the `main-dashboard/backend` directory and running:  
-`pip install -r requirements.txt`  
-and also make sure you have LCM installed.  
+Enter the `main-dashboard/frontend` directory and run `npm install`.
+
+Ensure you have the dependecies of the backend by entering the `main-dashboard/backend` directory and running `pip install -r requirements.txt`. Make sure you have LCM installed.  
 ## Running the Main Dashboard  
 ### Running dashboard with robot
 Enter the `main-dashboard/frontend` directory and run `npm start` to start the frontend server.  

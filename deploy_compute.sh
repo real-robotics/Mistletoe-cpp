@@ -6,4 +6,4 @@ mkdir -p ./deploy
 rsync -av --exclude='build' ./compute/ ./deploy/
 
 # Securely copy the deploy directory to the remote Raspberry Pi
-scp -r ./deploy easternspork@192.168.1.141:/home/easternspork
+scp -r ./deploy orangepi@192.168.1.147:/home/orangepi
