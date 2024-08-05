@@ -99,6 +99,7 @@ int main(int argc, char** argv) {
         int id = IDS[i];
         moteus::Controller::Options options;
         options.id = id;
+        std::cout << "controller " << id << std::endl;
         moteus::Query::Format query_format;
         query_format.voltage = moteus::Resolution::kFloat;
         options.query_format = query_format;
@@ -125,7 +126,9 @@ int main(int argc, char** argv) {
 
     // LCM Initialization with config to ensure packets published will enter local network
 
-    lcm::LCM *lcm = new lcm::LCM("udpm://239.255.76.67:7667?ttl=1");
+    lcm::LCM *lcm = new lcm::LCM(
+        // "udpm://239.255.76.67:7667?ttl=1"
+        );
 
     if (!lcm->good())
         return 1;
@@ -168,7 +171,7 @@ int main(int argc, char** argv) {
             state.velocity[i] = velocity;
 
             // TODO: make real
-            if (i == 2) {
+            if (i == 0) {
                 state.bus_voltage = bus_voltage; 
             }
             state.timestamp = std::chrono::system_clock::now().time_since_epoch().count();

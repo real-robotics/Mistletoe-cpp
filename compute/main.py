@@ -50,6 +50,7 @@ def publish_command():
 def handle_state(channel, data):
     global target_joint_pos
     msg = quad_state_t.decode(data)
+    print(f'lcm msg recieved: {msg}')
     # print(type(target_joint_pos))
     # print(target_joint_pos)
     # also this is kind of disgusting
@@ -66,6 +67,7 @@ def handle_state(channel, data):
     target_joint_pos = ppo_policy.compute_joint_pos(observation)
     publish_state(list(msg.position), list(msg.velocity), msg.bus_voltage, msg.fault_code)
     publish_command()
+    print('published stuff')
 
 def handle_velocity_command(channel, data):
     global velocity_command
