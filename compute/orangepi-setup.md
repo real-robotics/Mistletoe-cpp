@@ -5,13 +5,13 @@
 1. **Create the SSID for the hotspot on `wlan0`:**
 
     ```bash
-    sudo nmcli connection add type wifi ifname wlan0 con-name testhotspot autoconnect yes ssid testhotspot
+    sudo nmcli connection add type wifi ifname wlan0 con-name mistletoe autoconnect yes ssid mistletoe
     ```
 
 2. **Configure hotspot properties:**
 
     ```bash
-    sudo nmcli connection modify testhotspot 802-11-wireless.mode ap 802-11-wireless.band bg ipv4.method shared
+    sudo nmcli connection modify mistletoe 802-11-wireless.mode ap 802-11-wireless.band bg ipv4.method shared
     ```
 
 3. **Set up WPA2-PSK security:**
@@ -19,26 +19,26 @@
     Replace `your_password` with your desired password:
 
     ```bash
-    sudo nmcli connection modify testhotspot wifi-sec.key-mgmt wpa-psk
-    sudo nmcli connection modify testhotspot wifi-sec.psk your_password
+    sudo nmcli connection modify mistletoe wifi-sec.key-mgmt wpa-psk
+    sudo nmcli connection modify mistletoe wifi-sec.psk your_password
     ```
 
 4. **Activate the hotspot:**
 
     ```bash
-    sudo nmcli connection up testhotspot
+    sudo nmcli connection up mistletoe
     ```
 
 5. **Ensure the hotspot auto-connects on boot:**
 
     ```bash
-    sudo nmcli connection modify testhotspot connection.autoconnect yes
+    sudo nmcli connection modify mistletoe connection.autoconnect yes
     ```
 
 6. **Deactivate the hotspot when needed:**
 
     ```bash
-    sudo nmcli connection down testhotspot
+    sudo nmcli connection down mistletoe
     ```
 
 7. **View active connections:**

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# this should be placed in the `/etc/network/if-up.d/` directory. Check the orangepi-setup.md for details.
+
+# Add routes
+route add -net 239.255.76.0 netmask 255.255.255.0 dev wlan0
+route add -net 239.255.77.0 netmask 255.255.255.0 dev eth0
+
+# Execute the Python script
+/usr/bin/python3 /path/to/compute/main.py

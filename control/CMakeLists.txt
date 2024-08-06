@@ -16,18 +16,14 @@ lcm_add_library(example_messages-cpp CPP ${cpp_headers})
 target_include_directories(example_messages-cpp INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
-# Include moteus
-# include_directories(thirdparty/moteus/lib/cpp/mjbots/moteus)
-
+# Set C++ flags for threading
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
+# Use local clones instead of fetching from repositories
 include(FetchContent)
 FetchContent_Declare(
   moteus
-  GIT_REPOSITORY https://github.com/mjbots/moteus.git
-  # This git hash can (and likely should) be overriden by the higher
-  # level project.
-  GIT_TAG        25c847a7b7b739aa00d4f9a1a30fb041f2ce7a7b
+  SOURCE_DIR /home/easternspork/moteus_libs/moteus
 )
 
 FetchContent_MakeAvailable(moteus)
@@ -35,8 +31,7 @@ FetchContent_MakeAvailable(moteus)
 include(FetchContent)
 FetchContent_Declare(
   pi3hat
-  GIT_REPOSITORY https://github.com/mjbots/pi3hat.git
-  GIT_TAG        c8b9e13
+  SOURCE_DIR /home/easternspork/moteus_libs/pi3hat
 )
 
 FetchContent_MakeAvailable(pi3hat)
@@ -55,4 +50,3 @@ target_link_libraries(control moteus::cpp)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
 target_link_libraries(control Eigen3::Eigen)
-

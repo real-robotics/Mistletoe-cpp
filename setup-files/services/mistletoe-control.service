@@ -1,0 +1,20 @@
+# should be placed in /etc/systemd/system/ and paths should be changed accordingly
+[Unit]
+Description=Mistletoe Control Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+# replace with your own directory as needed
+ExecStart=/home/easternspork/control/build/control
+
+# file must be run as root because moteus can't access the CAN-FD interface otherwise
+User=root
+Group=root
+Restart=on-failure
+WorkingDirectory=/home/easternspork/control/build
+
+[Install]
+WantedBy=multi-user.target

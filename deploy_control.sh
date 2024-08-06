@@ -1,3 +1,4 @@
+# deprecated use deploy.sh
 
 # Create the deploy directory
 mkdir -p ./deploy

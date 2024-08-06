@@ -1,0 +1,20 @@
+# should be placed in /etc/systemd/system/ and paths should be changed accordingly
+
+[Unit]
+Description=Mistletoe Compute Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+ExecStart=/usr/bin/python3 /home/orangepi/compute/main.py
+
+# Adjust user and group as needed
+User=root
+Group=root
+Restart=on-failure
+WorkingDirectory=/home/orangepi/compute
+
+[Install]
+WantedBy=multi-user.target
