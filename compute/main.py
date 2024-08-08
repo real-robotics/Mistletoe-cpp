@@ -85,8 +85,13 @@ def handle_velocity_command(channel, data):
     velocity_command_msg = velocity_command_t.decode(data)
     velocity_command = [velocity_command_msg.lin_vel_x, velocity_command_msg.lin_vel_y, velocity_command_msg.ang_vel_z]
 
+def forward_enable_data(channel, data):
+    print('forwarding enabled command')
+    lc_pi.publish("ENABLED", data)
+
 lc_pi.subscribe("STATE_C2C", handle_state)
 lc_pc.subscribe("VELOCITY_COMMAND", handle_velocity_command)
+lc_pc.subscribe("ENABLED", forward_enable_data)
 
 def handle_lc_pc():
     while True:
