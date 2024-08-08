@@ -15,7 +15,7 @@ class DataHandler:
         self.enabled = False
         self.boolean_data = None  # For receiving boolean data
         self.lc = lcm.LCM(
-            "udpm://239.255.76.67:7667?ttl=1"
+    "udpm://239.255.76.67:7667?ttl=1"
             )
 
     def handle_message(self, channel, data):
@@ -50,7 +50,7 @@ data_handler = DataHandler()
 # Function to run LCM in a separate thread
 def run_lcm():
     lc = lcm.LCM(
-        # "udpm://239.255.76.67:7667?ttl=1"
+    "udpm://239.255.76.67:7667?ttl=1"
         )
     lc.subscribe("STATE_C2D", data_handler.handle_message)
     while True:

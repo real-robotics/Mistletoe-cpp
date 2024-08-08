@@ -8,18 +8,20 @@ import struct
 
 class velocity_command_t(object):
 
-    __slots__ = ["lin_vel_x", "lin_vel_y", "heading"]
+    __slots__ = ["timestamp", "lin_vel_x", "lin_vel_y", "ang_vel_z"]
 
-    __typenames__ = ["double", "double", "double"]
+    __typenames__ = ["int64_t", "double", "double", "double"]
 
-    __dimensions__ = [None, None, None]
+    __dimensions__ = [None, None, None, None]
 
     def __init__(self):
+        self.timestamp = 0
+        """ LCM Type: int64_t """
         self.lin_vel_x = 0.0
         """ LCM Type: double """
         self.lin_vel_y = 0.0
         """ LCM Type: double """
-        self.heading = 0.0
+        self.ang_vel_z = 0.0
         """ LCM Type: double """
 
     def encode(self):
@@ -29,7 +31,7 @@ class velocity_command_t(object):
         return buf.getvalue()
 
     def _encode_one(self, buf):
-        buf.write(struct.pack(">ddd", self.lin_vel_x, self.lin_vel_y, self.heading))
+        buf.write(struct.pack(">qddd", self.timestamp, self.lin_vel_x, self.lin_vel_y, self.ang_vel_z))
 
     @staticmethod
     def decode(data):
@@ -44,13 +46,13 @@ class velocity_command_t(object):
     @staticmethod
     def _decode_one(buf):
         self = velocity_command_t()
-        self.lin_vel_x, self.lin_vel_y, self.heading = struct.unpack(">ddd", buf.read(24))
+        self.timestamp, self.lin_vel_x, self.lin_vel_y, self.ang_vel_z = struct.unpack(">qddd", buf.read(32))
         return self
 
     @staticmethod
     def _get_hash_recursive(parents):
         if velocity_command_t in parents: return 0
-        tmphash = (0xf78f597ea146b120) & 0xffffffffffffffff
+        tmphash = (0x71b68a4a785f8981) & 0xffffffffffffffff
         tmphash  = (((tmphash<<1)&0xffffffffffffffff) + (tmphash>>63)) & 0xffffffffffffffff
         return tmphash
     _packed_fingerprint = None

@@ -17,7 +17,8 @@ ppo_policy = PPOPolicy(directory_path + '/rknn_models/ppo_policy.rknn')
 state_estimator = StateEstimatorModel(directory_path + '/rknn_models/state_estimator.rknn')
 imu = IMU()
 
-lc = lcm.LCM("udpm://239.255.76.67:7667?ttl=1")
+lc_pc = lcm.LCM("udpm://239.255.76.67:7667?ttl=1")
+lc_pi = lcm.LCM("udpm://239.255.77.67:7667?ttl=1")
 
 # this is stupid but its to match the outputs of the network models
 target_joint_pos = [0,0,0,0,0,0,0,0,0,0,0,0]
@@ -37,7 +38,8 @@ def publish_state(position, velocity, bus_voltage, fault_code):
     state_c2d_msg.velocity = velocity
     state_c2d_msg.bus_voltage = bus_voltage
     state_c2d_msg.fault_code = fault_code
-    lc.publish("STATE_C2D", state_c2d_msg.encode())
+    lc_pc.publish("STATE_C2D", state_c2d_msg.encode())
+    print('published to c2d')
         
 def publish_command():
     global target_joint_pos
@@ -45,7 +47,7 @@ def publish_command():
     command_msg = quad_command_t()
     command_msg.timestamp = time.time_ns()
     command_msg.position = target_joint_pos
-    lc.publish("COMMAND", command_msg.encode())
+    lc_pi.publish("COMMAND", command_msg.encode())
 
 def handle_state(channel, data):
     global target_joint_pos
@@ -75,11 +77,19 @@ def handle_velocity_command(channel, data):
     velocity_command_msg = velocity_command_t.decode(data)
     velocity_command = [velocity_command_msg.lin_vel_x, velocity_command_msg.lin_vel_y, velocity_command_msg.ang_vel_z]
 
-lc.subscribe("STATE_C2C", handle_state)
-lc.subscribe("VELOCITY_COMMAND", handle_velocity_command)
+lc_pi.subscribe("STATE_C2C", handle_state)
+lc_pc.subscribe("VELOCITY_COMMAND", handle_velocity_command)
 
-def handle_lcm():
+def handle_lc_pc():
     while True:
-        lc.handle()
+        lc_pc.handle()
 
-handle_lcm()
+def handle_lc_pi():
+    while True:
+        lc_pi.handle()
+
+thread_pc = threading.Thread(target=handle_lc_pc)
+thread_pi = threading.Thread(target=handle_lc_pi)
+
+thread_pc.start()
+thread_pi.start()

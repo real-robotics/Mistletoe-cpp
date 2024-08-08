@@ -17,7 +17,7 @@ class VelocityCommandSubscriber():
 
 if __name__ == "__main__":
     # Create an LCM instance
-    lc = lcm.LCM()
+    lc = lcm.LCM("udpm://239.255.76.67:7667?ttl=1")
 
     # Create a subscriber for the VELOCITY_COMMAND channel
     subscriber = VelocityCommandSubscriber()
