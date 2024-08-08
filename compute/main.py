@@ -10,6 +10,8 @@ from IMU import IMU
 from StateEstimatorModel import StateEstimatorModel
 from PPOPolicy import PPOPolicy
 
+import socket
+
 file_path = os.path.abspath(__file__)
 directory_path = os.path.dirname(file_path)
 
@@ -19,6 +21,9 @@ imu = IMU()
 
 lc_pc = lcm.LCM("udpm://239.255.76.67:7667?ttl=1")
 lc_pi = lcm.LCM("udpm://239.255.77.67:7667?ttl=1")
+
+pc_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+pc_addr = ('10.42.0.199', 7668)
 
 # this is stupid but its to match the outputs of the network models
 target_joint_pos = [0,0,0,0,0,0,0,0,0,0,0,0]
@@ -38,7 +43,10 @@ def publish_state(position, velocity, bus_voltage, fault_code):
     state_c2d_msg.velocity = velocity
     state_c2d_msg.bus_voltage = bus_voltage
     state_c2d_msg.fault_code = fault_code
-    lc_pc.publish("STATE_C2D", state_c2d_msg.encode())
+
+    # lc_pc.publish("STATE_C2D", state_c2d_msg.encode())
+    pc_socket.sendto(state_c2d_msg.encode(), pc_addr)
+
     print('published to c2d')
         
 def publish_command():
