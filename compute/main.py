@@ -1,6 +1,6 @@
 import lcm
 import time
-from exlcm import quad_command_t, quad_state_t, velocity_command_t
+from exlcm import quad_command_t, quad_state_t, velocity_command_t, enabled_t
 import threading
 import numpy as np 
 
@@ -36,6 +36,8 @@ velocity_command = [0,0,0]
 # initailze to zeros, don't know how good this actually is
 prev_action = [0,0,0,0,0,0,0,0,0,0,0,0]
 
+manual_command_enabled = True
+
 def publish_state(position, velocity, bus_voltage, fault_code):
     state_c2d_msg = quad_state_t()
     state_c2d_msg.timestamp = time.time_ns()
@@ -47,9 +49,9 @@ def publish_state(position, velocity, bus_voltage, fault_code):
     # lc_pc.publish("STATE_C2D", state_c2d_msg.encode())
     pc_socket.sendto(state_c2d_msg.encode(), pc_addr)
 
-    print('published to c2d')
+    # print('published to c2d')
         
-def publish_command():
+def publish_RL_command():
     global target_joint_pos
 
     command_msg = quad_command_t()
@@ -59,25 +61,32 @@ def publish_command():
 
 def handle_state(channel, data):
     global target_joint_pos
+    global manual_command_enabled
+    
     msg = quad_state_t.decode(data)
-    print(f'lcm msg recieved: {msg}')
+    # print(f'lcm msg recieved: {msg}')
     # print(type(target_joint_pos))
     # print(target_joint_pos)
     # also this is kind of disgusting
     # have to do [0][0].tolist() because weird outputs of models
-    state_estimator_input = imu.get_ang_vel() + imu.get_projected_gravity() + velocity_command + list(msg.position) + list(msg.velocity) + target_joint_pos
-    # convert into format required for model
-    state_estimator_input = np.array([state_estimator_input]).astype(np.float32)
+    
+    # only publish RL based position commands when manual control is false
+    if manual_command_enabled == False:
+        state_estimator_input = imu.get_ang_vel() + imu.get_projected_gravity() + velocity_command + list(msg.position) + list(msg.velocity) + target_joint_pos
+        # convert into format required for model
+        state_estimator_input = np.array([state_estimator_input]).astype(np.float32)
 
-    base_lin_vel = state_estimator.compute_lin_vel(state_estimator_input)[0][0].tolist()
+        base_lin_vel = state_estimator.compute_lin_vel([state_estimator_input])[0][0].tolist()
 
-    observation = base_lin_vel + imu.get_ang_vel() + imu.get_projected_gravity() + velocity_command + list(msg.position) + list(msg.velocity) + target_joint_pos
+        observation = base_lin_vel + imu.get_ang_vel() + imu.get_projected_gravity() + velocity_command + list(msg.position) + list(msg.velocity) + target_joint_pos
 
-    observation = np.array([observation]).astype(np.float32)
-    target_joint_pos = ppo_policy.compute_joint_pos(observation)
+        observation = np.array([observation]).astype(np.float32)
+        target_joint_pos = ppo_policy.compute_joint_pos([observation])
+        publish_RL_command()
+
     publish_state(list(msg.position), list(msg.velocity), msg.bus_voltage, msg.fault_code)
-    publish_command()
-    print('published stuff')
+
+    # print('published stuff')
 
 def handle_velocity_command(channel, data):
     global velocity_command
@@ -86,12 +95,27 @@ def handle_velocity_command(channel, data):
     velocity_command = [velocity_command_msg.lin_vel_x, velocity_command_msg.lin_vel_y, velocity_command_msg.ang_vel_z]
 
 def forward_enable_data(channel, data):
-    print('forwarding enabled command')
+    if data is None:
+        return
+    print("ENABLED" if enabled_t.decode(data).enabled else "DISABLED")
     lc_pi.publish("ENABLED", data)
 
+def forward_command_data(channel, data):
+    global manual_command_enabled
+    
+    if data is None:
+        return
+    
+    manual_command_enabled = quad_command_t.decode(data).manual_command
+
+    if (manual_command_enabled == True):
+        lc_pi.publish("ENABLED", data)
+
 lc_pi.subscribe("STATE_C2C", handle_state)
+
 lc_pc.subscribe("VELOCITY_COMMAND", handle_velocity_command)
 lc_pc.subscribe("ENABLED", forward_enable_data)
+lc_pc.subscribe("COMMAND", forward_command_data)
 
 def handle_lc_pc():
     while True:

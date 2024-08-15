@@ -62,7 +62,7 @@ async def send_opi_data_to_websocket(websocket):
     while True:
         inc_data = data_handler.get_data()
         if inc_data is None or last_timestamp == inc_data["timestamp"]:
-            asyncio.sleep(0.05)
+            await asyncio.sleep(0.05)
             continue
 
         # Send data over WebSocket
