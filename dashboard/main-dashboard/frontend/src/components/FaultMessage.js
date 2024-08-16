@@ -1,4 +1,7 @@
+// src/components/FaultMessage.js
+
 import React, { useState, useEffect } from 'react';
+import { Typography, Box } from '@mui/material';
 
 const FaultMessage = ({ socketData }) => {
   const [faultCode, setFaultCode] = useState(null);
@@ -10,15 +13,18 @@ const FaultMessage = ({ socketData }) => {
   }, [socketData]);
 
   return (
-    <div>
+    <Box textAlign="left" p={2}>
       {faultCode !== null ? (
-        <p style={{ color: faultCode !== 0 ? 'red' : 'green' }}>
+        <Typography
+          variant="body1"
+          style={{ color: faultCode !== 0 ? 'red' : 'green' }}
+        >
           {faultCode !== 0 ? `Fault detected, fault code: ${faultCode}` : 'No faults detected.'}
-        </p>
+        </Typography>
       ) : (
-        <p>Loading...</p>
+        <Typography>Loading...</Typography>
       )}
-    </div>
+    </Box>
   );
 };
 

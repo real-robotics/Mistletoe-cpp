@@ -1,4 +1,7 @@
+// src/components/ToggleButton.js
+
 import React, { useState } from 'react';
+import { Button, Box, Typography } from '@mui/material';
 import { sendWebSocketMessage } from '../utils/websocket';
 
 const ToggleButton = ({ socket, socketData }) => {
@@ -11,16 +14,19 @@ const ToggleButton = ({ socket, socketData }) => {
   };
 
   return (
-    <button
-      onClick={toggleButton}
-      style={{
-        backgroundColor: isEnabled ? 'green' : 'red',
-        color: 'white',
-      }}
-      className="button"
-    >
-      {isEnabled ? 'Enabled' : 'Disabled'}
-    </button>
+    <Box textAlign="left" p={2}>
+      <Typography variant="h6" color="textPrimary" sx={{ marginBottom: 1 }}>
+        Enabled Status:
+      </Typography>
+      <Button
+        onClick={toggleButton}
+        variant="contained"
+        color={isEnabled ? 'success' : 'error'}
+        fullWidth
+      >
+        {isEnabled ? 'Enabled' : 'Disabled'}
+      </Button>
+    </Box>
   );
 };
 

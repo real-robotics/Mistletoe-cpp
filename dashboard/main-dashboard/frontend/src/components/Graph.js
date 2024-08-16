@@ -1,5 +1,7 @@
+// src/components/Graph.js
 import React, { useEffect, useState } from 'react';
 import { Line } from 'react-chartjs-2';
+import { Box, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import {
   Chart,
   CategoryScale,
@@ -12,7 +14,6 @@ import {
   TimeScale,
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
-import '../styles.css';
 
 Chart.register(
   CategoryScale,
@@ -33,14 +34,14 @@ const Graph = ({ socketData }) => {
       {
         label: 'Position',
         data: [],
-        borderColor: 'rgba(75, 192, 192, 1)',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        borderColor: '#1e88e5', // Bright blue
+        backgroundColor: 'rgba(30, 136, 229, 0.2)',
       },
       {
         label: 'Velocity',
         data: [],
-        borderColor: 'rgba(192, 75, 75, 1)',
-        backgroundColor: 'rgba(192, 75, 75, 0.2)',
+        borderColor: '#ff6b6b', // Bright red
+        backgroundColor: 'rgba(255, 107, 107, 0.2)',
       },
     ],
   });
@@ -48,7 +49,6 @@ const Graph = ({ socketData }) => {
   useEffect(() => {
     if (socketData) {
       const newData = socketData;
-      console.log(newData)
       setData((prevData) => {
         const newLabels = [...prevData.labels, newData.timestamp];
         const newPositionData = [
@@ -61,15 +61,15 @@ const Graph = ({ socketData }) => {
         ];
 
         return {
-          labels: newLabels.slice(-20), // Keep the last 20 labels
+          labels: newLabels.slice(-20),
           datasets: [
             {
               ...prevData.datasets[0],
-              data: newPositionData.slice(-20), // Keep the last 20 data points for Position
+              data: newPositionData.slice(-20),
             },
             {
               ...prevData.datasets[1],
-              data: newVelocityData.slice(-20), // Keep the last 20 data points for Velocity
+              data: newVelocityData.slice(-20),
             },
           ],
         };
@@ -77,52 +77,40 @@ const Graph = ({ socketData }) => {
     }
   }, [socketData, selectedPair]);
 
-  useEffect(() => {
-    setData({
-      labels: [],
-      datasets: [
-        {
-          label: 'Position',
-          data: [],
-          borderColor: 'rgba(75, 192, 192, 1)',
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        },
-        {
-          label: 'Velocity',
-          data: [],
-          borderColor: 'rgba(192, 75, 75, 1)',
-          backgroundColor: 'rgba(192, 75, 75, 0.2)',
-        },
-      ],
-    });
-  }, [selectedPair]);
-
   const handleChange = (event) => {
     setSelectedPair(parseInt(event.target.value));
   };
 
   return (
-    <div>
-      <div>
-        <label htmlFor="joint-select" className="label">
-          Choose a Joint to Monitor:
-        </label>
-        <select id="joint-select" onChange={handleChange} value={selectedPair}>
+    <Box p={2}>
+      <FormControl fullWidth variant="outlined" margin="normal">
+        <InputLabel id="joint-select-label">Choose a Joint to Monitor:</InputLabel>
+        <Select
+          labelId="joint-select-label"
+          id="joint-select"
+          value={selectedPair}
+          onChange={handleChange}
+          label="Choose a Joint to Monitor"
+          sx={{ color: '#c9d1d9' }} // Ensure the text color fits the dark theme
+        >
           {Array.from({ length: 12 }, (_, i) => (
-            <option key={i} value={i}>
+            <MenuItem key={i} value={i}>
               Joint {i + 1}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-      </div>
-      <div className="graph-container">
+        </Select>
+      </FormControl>
+      <Box mt={4}>
         <Line
           data={data}
           options={{
             animation: false,
             plugins: {
               legend: {
-                display: true, // Displays the legend with options to toggle datasets
+                display: true,
+                labels: {
+                  color: '#c9d1d9', // Legend text color
+                },
               },
             },
             scales: {
@@ -130,13 +118,15 @@ const Graph = ({ socketData }) => {
                 type: 'time',
                 time: {
                   unit: 'second',
-                  tooltipFormat: 'PPpp', // Display full timestamp in tooltip
+                  tooltipFormat: 'PPpp',
                 },
                 title: {
                   display: true,
                   text: 'Timestamp',
+                  color: '#c9d1d9', // Axis label color
                 },
                 ticks: {
+                  color: '#c9d1d9', // Tick mark color
                   autoSkip: true,
                   maxTicksLimit: 10,
                 },
@@ -145,13 +135,17 @@ const Graph = ({ socketData }) => {
                 title: {
                   display: true,
                   text: 'Value',
+                  color: '#c9d1d9', // Axis label color
+                },
+                ticks: {
+                  color: '#c9d1d9', // Tick mark color
                 },
               },
             },
           }}
         />
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 
