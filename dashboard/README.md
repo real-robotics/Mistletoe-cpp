@@ -3,9 +3,9 @@ This module is intended to be run on a control computer than connects to the onb
 
 ![Sample image of dashboard](docs/image.png)  
 
-<div align="center">
+<!-- <div align="center">
   <caption>Note: Sample image uses random values.</caption>
-</div>
+</div> -->
 
 ## Installation Steps  
 Enter the `main-dashboard/frontend` directory and run `npm install`.
