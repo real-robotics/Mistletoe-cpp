@@ -108,8 +108,9 @@ def forward_command_data(channel, data):
     
     manual_command_enabled = quad_command_t.decode(data).manual_command
 
+    # technically this should always be true, but just in case.
     if (manual_command_enabled == True):
-        lc_pi.publish("ENABLED", data)
+        lc_pi.publish("COMMAND", data)
 
 lc_pi.subscribe("STATE_C2C", handle_state)
 

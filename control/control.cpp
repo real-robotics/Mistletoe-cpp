@@ -43,7 +43,9 @@ std::vector<moteus::Controller> controllers;
 
 class Handler {
   public:
-    ~Handler() {}
+    Handler() {
+        bool enabled = False;
+    }
     void handleControlCommand(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
                        const exlcm::quad_command_t *msg)
     {
@@ -57,6 +59,14 @@ class Handler {
         //     position_cmd.velocity = 0;
         //     controllers.at(i).SetPosition(position_cmd);
         // }
+
+        int i = 0;
+
+        double position = msg->position[i];
+        moteus::PositionMode::Command position_cmd;
+        position_cmd.position = position;
+        position_cmd.velocity = 0;
+        controllers.at(i).SetPosition(position_cmd);
         
         std::cout << std::endl;
     }
@@ -68,6 +78,8 @@ class Handler {
 
         // TODO: msg.enabled status is not printed (only the string part)
         std::cout << "Current enabled status:" << msg->enabled << std::endl;
+
+        enabled = msg->enabled;
     }
 };
 
