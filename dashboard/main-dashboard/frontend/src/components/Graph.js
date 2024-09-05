@@ -27,7 +27,7 @@ Chart.register(
 );
 
 const Graph = ({ socketData }) => {
-  const [selectedPair, setSelectedPair] = useState(2);
+  const [selectedPair, setSelectedPair] = useState(0);
   const [data, setData] = useState({
     labels: [],
     datasets: [

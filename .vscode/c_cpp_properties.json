@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${default}",
-                "/usr/include/eigen3"
+                "/usr/include/eigen3",
+                "/home/fumi/CodeStuff/moteus/lib/cpp/mjbots"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

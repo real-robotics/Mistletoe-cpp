@@ -67,5 +67,5 @@ echo "Deployment and build completed successfully."
 
 # Restart services
 echo "Restarting services..."
-sshpass -p "$PASSWORD" ssh "$INTERMEDIATE_USER@$INTERMEDIATE_HOST" "sudo -S systemctl restart mistletoe-compute.service"
-sshpass -p "$PASSWORD" ssh "$INTERMEDIATE_USER@$INTERMEDIATE_HOST" "sshpass -p '$PASSWORD' ssh $FINAL_USER@$FINAL_HOST 'sudo -S systemctl restart mistletoe-control.service'"
+# sshpass -p "$PASSWORD" ssh "$INTERMEDIATE_USER@$INTERMEDIATE_HOST" "sudo -S systemctl restart mistletoe-compute.service"
+# sshpass -p "$PASSWORD" ssh "$INTERMEDIATE_USER@$INTERMEDIATE_HOST" "sshpass -p '$PASSWORD' ssh $FINAL_USER@$FINAL_HOST 'sudo -S systemctl restart mistletoe-control.service'"

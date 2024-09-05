@@ -14,7 +14,6 @@ def main():
 
     # Publish the message on the VELOCITY_COMMAND channel
     while True:
-        print(msg.encode())
         lcm_instance.publish("COMMAND", msg.encode())
         print("Published operator message.")
         time.sleep(1)  # Publish every second

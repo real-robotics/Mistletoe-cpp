@@ -60,6 +60,7 @@ def publish_RL_command():
     lc_pi.publish("COMMAND", command_msg.encode())
 
 def handle_state(channel, data):
+    print('state recieved')
     global target_joint_pos
     global manual_command_enabled
     
@@ -110,6 +111,8 @@ def forward_command_data(channel, data):
 
     # technically this should always be true, but just in case.
     if (manual_command_enabled == True):
+        print('forwarded command')
+        print(quad_command_t.decode(data).position)
         lc_pi.publish("COMMAND", data)
 
 lc_pi.subscribe("STATE_C2C", handle_state)

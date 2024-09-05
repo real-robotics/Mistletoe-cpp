@@ -1,14 +1,28 @@
-// src/App.js
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import MainContainer from './MainContainer';
 import theme from './theme';
+import { connectWebSocket } from './utils/websocket';
 
 const App = () => {
+  const [socket, setSocket] = useState(null);
+  const [socketData, setSocketData] = useState(null);
+
+  useEffect(() => {
+    const ws = connectWebSocket('ws://localhost:8080', (data) => {
+      setSocketData(data);
+    });
+    setSocket(ws);
+
+    return () => {
+      if (ws) ws.close();
+    };
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <MainContainer />
+      <MainContainer socket={socket} socketData={socketData} />
     </ThemeProvider>
   );
 };

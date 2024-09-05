@@ -43,32 +43,39 @@ std::vector<moteus::Controller> controllers;
 
 class Handler {
   public:
+    bool enabled = false;
+
     Handler() {
-        bool enabled = False;
+        enabled = false;
     }
     void handleControlCommand(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
                        const exlcm::quad_command_t *msg)
     {
-        std::cout << "Received Message on Channel: " << chan << std::endl;
-        std::cout << "    timestamp = " << msg->timestamp << std::endl;
-        
-        // for (int i = 0; i < NUM_MOTORS; i++) {
-        //     double position = msg->position[i];
-        //     moteus::PositionMode::Command position_cmd;
-        //     position_cmd.position = position;
-        //     position_cmd.velocity = 0;
-        //     controllers.at(i).SetPosition(position_cmd);
-        // }
+        std::cout << enabled;
+        if (enabled == true) {
+            std::cout << "Received Message on Channel: " << chan << std::endl;
+            std::cout << "    timestamp = " << msg->timestamp << std::endl;
+            // for (int i = 0; i < NUM_MOTORS; i++) {
+            //     double position = msg->position[i];
+            //     moteus::PositionMode::Command position_cmd;
+            //     position_cmd.position = position;
+            //     position_cmd.velocity = 0;
+            //     controllers.at(i).SetPosition(position_cmd);
+            // }
 
-        int i = 0;
+            int i = 2;
+            std::cout << IDS[i];
 
-        double position = msg->position[i];
-        moteus::PositionMode::Command position_cmd;
-        position_cmd.position = position;
-        position_cmd.velocity = 0;
-        controllers.at(i).SetPosition(position_cmd);
-        
-        std::cout << std::endl;
+            // double position = msg->position[i];
+            // moteus::PositionMode::Command position_cmd;
+            // position_cmd.position = position;
+            // position_cmd.velocity = 0;
+            // position_cmd.velocity_limit = 0.5;
+            // position_cmd.accel_limit = 2; 
+            // controllers.at(i).SetPosition(position_cmd);
+            
+            std::cout << std::endl;
+        }
     }
 
     void handleEnable(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
