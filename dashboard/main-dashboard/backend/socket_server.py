@@ -69,7 +69,7 @@ async def send_opi_data_to_websocket(websocket):
         out_data = json.dumps(inc_data)
         await websocket.send(out_data)
 
-        print('Data sent to dashboard!')
+        # print('Data sent to dashboard!')
         
         await asyncio.sleep(0.1)
 

@@ -28,18 +28,18 @@ const BusVoltageDisplay = ({ socketData }) => {
     <Box textAlign="left" 
     p={2}
     >
-      <Typography variant="h6">Bus Voltage</Typography>
+      <Typography variant="h6">Bus Voltage:</Typography>
       {busVoltage !== null ? (
         <Box>
           <Typography
             variant="body1"
-            style={{ color: getPercentageColor(percentage), fontWeight: 'bold' }}
+            style={{ color: getPercentageColor(percentage)}}
           >
             {truncateVoltage(busVoltage)} V ({percentage.toFixed(0)}%)
           </Typography>
           <Typography
             variant="body1"
-            style={{ color: getPercentageColor(percentage), fontWeight: 'bold' }}
+            style={{ color: getPercentageColor(percentage)}}
           >
             {percentage < 20 ? 'Bus Voltage Low, Charge Now' : 'Bus Voltage Normal'}
           </Typography>

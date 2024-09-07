@@ -60,7 +60,7 @@ def publish_RL_command():
     lc_pi.publish("COMMAND", command_msg.encode())
 
 def handle_state(channel, data):
-    print('state recieved')
+    # print('state recieved')
     global target_joint_pos
     global manual_command_enabled
     
@@ -96,6 +96,7 @@ def handle_velocity_command(channel, data):
     velocity_command = [velocity_command_msg.lin_vel_x, velocity_command_msg.lin_vel_y, velocity_command_msg.ang_vel_z]
 
 def forward_enable_data(channel, data):
+    
     if data is None:
         return
     print("ENABLED" if enabled_t.decode(data).enabled else "DISABLED")

@@ -17,7 +17,7 @@ const FaultMessage = ({ socketData }) => {
       {faultCode !== null ? (
         <Typography
           variant="body1"
-          style={{ color: faultCode !== 0 ? 'red' : 'green' }}
+          style={{ color: faultCode !== 0 ? 'red' : 'green', fontWeight: 'bold' }}
         >
           {faultCode !== 0 ? `Fault detected, fault code: ${faultCode}` : 'No faults detected.'}
         </Typography>

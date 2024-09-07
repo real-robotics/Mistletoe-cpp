@@ -9,14 +9,10 @@ const App = () => {
   const [socketData, setSocketData] = useState(null);
 
   useEffect(() => {
-    const ws = connectWebSocket('ws://localhost:8080', (data) => {
+    const socketConnection = connectWebSocket('ws://localhost:8080', (data) => {
       setSocketData(data);
     });
-    setSocket(ws);
-
-    return () => {
-      if (ws) ws.close();
-    };
+    setSocket(socketConnection);
   }, []);
 
   return (

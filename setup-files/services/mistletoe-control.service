@@ -7,7 +7,8 @@ Wants=network-online.target
 [Service]
 Type=simple
 
-# replace with your own directory as needed
+# Run the route add command before starting the control executable
+ExecStartPre=/sbin/route add -net 239.255.77.0 netmask 255.255.255.0 dev eth0
 ExecStart=/home/easternspork/control/build/control
 
 # file must be run as root because moteus can't access the CAN-FD interface otherwise
