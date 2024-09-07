@@ -18,7 +18,9 @@
 
 using namespace mjbots;
 
-#define NUM_MOTORS 12
+const int NUM_SERVOS = 12;
+const int NUM_SERVOS_PER_BUS = 3;
+const int NUM_BUSSES = 4;
 
 const int IDS[] = {
     11, 12, 13, // front left
@@ -66,7 +68,7 @@ void handle_lcm(lcm::LCM *lcm) {
 }
 
 void handle_exit(int s) {
-    std::cout << "Exit signal received. Stopping motors and waiting for main loop to finish..." << std::endl;
+    std::cout << "Exit signal received. Stopping servos and waiting for main loop to finish..." << std::endl;
     exit_requested = true; // Set the flag
 }
 
@@ -78,7 +80,7 @@ void setup_signal_handler() {
     sigIntHandler.sa_flags = 0;
 
     sigaction(SIGINT, &sigIntHandler, nullptr);
-    // sigaction(SIGTERM, &sigIntHandler, nullptr);
+    sigaction(SIGTERM, &sigIntHandler, nullptr);
     sigaction(SIGABRT, &sigIntHandler, nullptr);
     // sigaction(SIGFPE, &sigIntHandler, nullptr);
     // sigaction(SIGILL, &sigIntHandler, nullptr);
@@ -87,29 +89,56 @@ void setup_signal_handler() {
 
 int main(int argc, char** argv) {
     // MOTEUS Initialization
-    mjbots::pi3hat::Pi3HatMoteusFactory::Register();
-    moteus::Controller::DefaultArgProcess(argc, argv);
 
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        int id = IDS[i];
-        moteus::Controller::Options options;
-        options.id = id;
-        std::cout << "controller " << id << std::endl;
-        moteus::Query::Format query_format;
-        query_format.voltage = moteus::Resolution::kFloat;
-        options.query_format = query_format;
+    // construct transport with correct servo map
+    pi3hat::Pi3HatMoteusTransport::Options pi3hat_options;
+    std::map<int, int> servo_map;
+    servo_map.insert({13,1});
+    pi3hat_options.servo_map = servo_map;
+    auto transport = std::make_shared<pi3hat::Pi3HatMoteusTransport>(pi3hat_options);
 
-        controllers.push_back(moteus::Controller(options));
-    }
+    std::map<int, std::shared_ptr<moteus::Controller>> controllers;
+    std::map<int, moteus::Query::Result> servo_data;
+
+    // int servo_count = 0;
+
+    // for (int bus = 1; bus <= NUM_BUSSES; bus++) {
+    //     for (int i = 1; i <= NUM_SERVOS_PER_BUS; i++) {
+    //         // controller ids have the format of [bus number][controller # on bus] ie. 31
+    //         int id = IDS[servo_count];
+    //         std::cout << "controller " << id << " initialized." << std::endl;
+    //         moteus::Controller::Options options;
+    //         moteus::Query::Format query_format;
+    //         query_format.voltage = moteus::Resolution::kFloat;
+    //         options.query_format = query_format;
+    //         options.bus = bus;
+    //         options.id = id;
+    //         options.transport = transport;
+    //         controllers[servo_count] = std::make_shared<moteus::Controller>(options);
+    //         servo_count++;
+    //     }
+    // }
+
+
+    int id = 13;
+    std::cout << "controller " << id << " initialized." << std::endl;
+    moteus::Controller::Options options;
+    moteus::Query::Format query_format;
+    query_format.voltage = moteus::Resolution::kFloat;
+    options.query_format = query_format;
+    options.bus = 1;
+    options.id = id;
+    options.transport = transport;
+    controllers[0] = std::make_shared<moteus::Controller>(options);
 
     // Set up signal handler
     setup_signal_handler();
 
-    // Stop all motors initially
-    for (moteus::Controller controller : controllers) {
-        controller.SetStop();
+    // Stop all servos initially
+    for (const auto& pair : controllers) {
+        pair.second->SetStop();
     }
-
+    
     // LCM Initialization with config to ensure packets published will enter local network
     lcm::LCM *lcm = new lcm::LCM("udpm://239.255.77.67:7667?ttl=1");
 
@@ -127,40 +156,86 @@ int main(int argc, char** argv) {
         .timestamp = std::chrono::system_clock::now().time_since_epoch().count()
     };
 
+    bool controllers_stopped = true;
+    
+    std::cout << "Main Loop Started" << std::endl;
+
     while (!exit_requested) { // Main loop continues until exit is requested
-        for (int i = 0; i < NUM_MOTORS; i++) {
-            moteus::Controller controller = controllers.at(i);
-            auto maybe_state = controller.SetQuery();
-            double position = -1;
-            double velocity = -1;
-            double torque = -1;
-            double bus_voltage = -1;
-            if (maybe_state) {
-                moteus::Query::Result state;
-                state = maybe_state->values;
-                position = state.position;
-                velocity = state.velocity;
-                bus_voltage = state.voltage;
-            }
-            state.position[i] = position;
-            state.velocity[i] = velocity;
 
-            state.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
+        std::vector<moteus::CanFdFrame> command_frames;
 
-            // TODO: make real
-            if (i == 0) {
-                state.bus_voltage = bus_voltage;
+        // stop controllers if robot is disabled
+        if (!lcmHandler.enabled && !controllers_stopped) {
+
+            std::cout << "Controllers stopped." << std::endl;
+
+            std::vector<moteus::CanFdFrame> replies;
+
+            // Accumulate all of our command CAN frames.
+            for (const auto& pair : controllers) {
+                command_frames.push_back(pair.second->MakeStop());
             }
+
+            transport->BlockingCycle(&command_frames[0], command_frames.size(), &replies);
+
+            controllers_stopped = true;
         }
 
-        double commanded_position = lcmHandler.commanded_position[2];
-        moteus::PositionMode::Command position_cmd;
-        position_cmd.position = commanded_position;
-        position_cmd.velocity = 0;
-        position_cmd.velocity_limit = 0.5;
-        position_cmd.accel_limit = 2; 
-        controllers.at(2).SetPosition(position_cmd);
+        // still query info when disabled
 
+        if (!lcmHandler.enabled) {
+            // Accumulate all of our command CAN frames.
+            for (const auto& pair : controllers) {
+                command_frames.push_back(pair.second->MakeQuery());
+            }
+
+            // std::cout << "queried controller" << std::endl;
+            
+        } else {
+            // Accumulate all of our command CAN frames.
+
+            for (const auto& pair : controllers) {
+                command_frames.push_back(pair.second->MakeQuery());
+            }
+
+            std::cout << "Position command sent" << std::endl;
+            
+
+            for (const auto& pair : controllers) {
+                moteus::PositionMode::Command position_command;
+                double commanded_position = lcmHandler.commanded_position[2];
+                position_command.position = commanded_position;
+                position_command.velocity = 0;
+                position_command.velocity_limit = 0.5;
+                position_command.accel_limit = 2; 
+                command_frames.push_back(pair.second->MakePosition(position_command));
+            }
+
+            // controllers are no longer stopped when position commanded
+            controllers_stopped = false;
+        }
+
+        std::vector<moteus::CanFdFrame> replies;
+
+        transport->BlockingCycle(&command_frames[0], command_frames.size(), &replies);
+
+        // We parse these into a map to both sort and de-duplicate them,
+        // and persist data in the event that any are missing.
+        for (const auto& frame : replies) {
+            servo_data[frame.source] = moteus::Query::Parse(frame.data, frame.size);
+        }
+
+        int i = 0;
+
+        for (const auto& pair : servo_data) {
+            const auto r = pair.second;
+            state.position[i] = r.position;
+            state.velocity[i] = r.velocity;
+            if (i == 0) {
+                state.bus_voltage = r.voltage;
+            }
+            i++;
+        }
 
         // Publish the state over LCM
         lcm->publish("STATE_C2C", &state);
@@ -168,11 +243,18 @@ int main(int argc, char** argv) {
         usleep(10000); // sleep for 10ms
     }
 
+
     // Clean up after main loop exits
-    std::cout << "Stopping all motors." << std::endl;
-    for (moteus::Controller controller : controllers) {
-        controller.SetStop();
+    std::cout << "Stopping all servos." << std::endl;
+    std::vector<moteus::CanFdFrame> stop_command_frames;
+    std::vector<moteus::CanFdFrame> replies;
+
+    // Accumulate all of our command CAN frames.
+    for (const auto& pair : controllers) {
+        stop_command_frames.push_back(pair.second->MakeStop());
     }
+
+    transport->BlockingCycle(&stop_command_frames[0], stop_command_frames.size(), &replies);
 
     // Ensure LCM handler thread finishes before exiting
     std::cout << "Waiting for LCM handler thread to finish." << std::endl;

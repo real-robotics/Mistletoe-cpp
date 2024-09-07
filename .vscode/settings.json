@@ -82,7 +82,11 @@
         "__nullptr": "cpp",
         "locale": "cpp",
         "*.txx": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "__hash_table": "cpp",
+        "__tree": "cpp",
+        "queue": "cpp",
+        "stack": "cpp"
     },
     "spellright.language": [],
     "spellright.documentTypes": [

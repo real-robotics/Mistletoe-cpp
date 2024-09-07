@@ -50,3 +50,7 @@ target_link_libraries(control moteus::cpp)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
 target_link_libraries(control Eigen3::Eigen)
+
+add_executable(test test.cpp)
+target_link_libraries(test pi3hat::pi3hat)
+target_link_libraries(test moteus::cpp)
