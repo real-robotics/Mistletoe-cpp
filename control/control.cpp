@@ -79,7 +79,7 @@ void setup_signal_handler() {
 
     sigaction(SIGINT, &sigIntHandler, nullptr);
     // sigaction(SIGTERM, &sigIntHandler, nullptr);
-    // sigaction(SIGABRT, &sigIntHandler, nullptr);
+    sigaction(SIGABRT, &sigIntHandler, nullptr);
     // sigaction(SIGFPE, &sigIntHandler, nullptr);
     // sigaction(SIGILL, &sigIntHandler, nullptr);
     // sigaction(SIGSEGV, &sigIntHandler, nullptr);
