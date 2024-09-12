@@ -93,43 +93,59 @@ int main(int argc, char** argv) {
     // construct transport with correct servo map
     pi3hat::Pi3HatMoteusTransport::Options pi3hat_options;
     std::map<int, int> servo_map;
+
+    servo_map.insert({11,1});
+    servo_map.insert({12,1});
     servo_map.insert({13,1});
+    
+    servo_map.insert({21,2});
+    servo_map.insert({22,2});
+    servo_map.insert({23,2});
+
+    servo_map.insert({31,3});
+    servo_map.insert({32,3});
+    servo_map.insert({33,3});
+    
+    servo_map.insert({41,4});
+    servo_map.insert({42,4});
+    servo_map.insert({43,4});
+    
     pi3hat_options.servo_map = servo_map;
     auto transport = std::make_shared<pi3hat::Pi3HatMoteusTransport>(pi3hat_options);
 
     std::map<int, std::shared_ptr<moteus::Controller>> controllers;
     std::map<int, moteus::Query::Result> servo_data;
 
-    // int servo_count = 0;
+    int servo_count = 0;
 
-    // for (int bus = 1; bus <= NUM_BUSSES; bus++) {
-    //     for (int i = 1; i <= NUM_SERVOS_PER_BUS; i++) {
-    //         // controller ids have the format of [bus number][controller # on bus] ie. 31
-    //         int id = IDS[servo_count];
-    //         std::cout << "controller " << id << " initialized." << std::endl;
-    //         moteus::Controller::Options options;
-    //         moteus::Query::Format query_format;
-    //         query_format.voltage = moteus::Resolution::kFloat;
-    //         options.query_format = query_format;
-    //         options.bus = bus;
-    //         options.id = id;
-    //         options.transport = transport;
-    //         controllers[servo_count] = std::make_shared<moteus::Controller>(options);
-    //         servo_count++;
-    //     }
-    // }
+    for (int bus = 1; bus <= 4; bus++) {
+        for (int i = 1; i <= 3; i++) {
+            // controller ids have the format of [bus number][controller # on bus] ie. 31
+            int id = bus * 10 + i;
+            std::cout << "controller " << id << " initialized." << std::endl;
+            moteus::Controller::Options options;
+            moteus::Query::Format query_format;
+            query_format.voltage = moteus::Resolution::kFloat;
+            options.query_format = query_format;
+            options.bus = bus;
+            options.id = id;
+            options.transport = transport;
+            controllers[servo_count] = std::make_shared<moteus::Controller>(options);
+            servo_count++;
+        }
+    }
 
 
-    int id = 13;
-    std::cout << "controller " << id << " initialized." << std::endl;
-    moteus::Controller::Options options;
-    moteus::Query::Format query_format;
-    query_format.voltage = moteus::Resolution::kFloat;
-    options.query_format = query_format;
-    options.bus = 1;
-    options.id = id;
-    options.transport = transport;
-    controllers[0] = std::make_shared<moteus::Controller>(options);
+    // int id = 13;
+    // std::cout << "controller " << id << " initialized." << std::endl;
+    // moteus::Controller::Options options;
+    // moteus::Query::Format query_format;
+    // query_format.voltage = moteus::Resolution::kFloat;
+    // options.query_format = query_format;
+    // options.bus = 1;
+    // options.id = id;
+    // options.transport = transport;
+    // controllers[0] = std::make_shared<moteus::Controller>(options);
 
     // Set up signal handler
     setup_signal_handler();
@@ -159,6 +175,11 @@ int main(int argc, char** argv) {
     bool controllers_stopped = true;
     
     std::cout << "Main Loop Started" << std::endl;
+    int step = 0;
+
+    bool first_pos = true;
+
+    auto start = std::chrono::high_resolution_clock::now();
 
     while (!exit_requested) { // Main loop continues until exit is requested
 
@@ -176,9 +197,27 @@ int main(int argc, char** argv) {
                 command_frames.push_back(pair.second->MakeStop());
             }
 
-            transport->BlockingCycle(&command_frames[0], command_frames.size(), &replies);
+            // transport->BlockingCycle(&command_frames[0], command_frames.size(), &replies);
 
             controllers_stopped = true;
+
+            for (const auto& frame : replies) {
+                servo_data[frame.source] = moteus::Query::Parse(frame.data, frame.size);
+            }
+
+            int i = 0;
+
+            for (const auto& pair : servo_data) {
+                const auto r = pair.second;
+                state.position[i] = r.position;
+                state.velocity[i] = r.velocity;
+                state.bus_voltage = r.voltage;
+                // int8_t fault = 0;
+                if (r.fault > 0) {
+                    std::cout << r.fault << std::endl;
+                }
+                i++;
+            }
         }
 
         // still query info when disabled
@@ -198,9 +237,8 @@ int main(int argc, char** argv) {
                 command_frames.push_back(pair.second->MakeQuery());
             }
 
-            std::cout << "Position command sent" << std::endl;
-            
-
+            // std::cout << "Position command sent" << std::endl;
+            int j = 0;
             for (const auto& pair : controllers) {
                 moteus::PositionMode::Command position_command;
                 double commanded_position = lcmHandler.commanded_position[2];
@@ -209,6 +247,11 @@ int main(int argc, char** argv) {
                 position_command.velocity_limit = 0.5;
                 position_command.accel_limit = 2; 
                 command_frames.push_back(pair.second->MakePosition(position_command));
+                j++;
+            }
+            if (first_pos == true) {
+                start = std::chrono::high_resolution_clock::now();
+                first_pos = false;
             }
 
             // controllers are no longer stopped when position commanded
@@ -225,16 +268,12 @@ int main(int argc, char** argv) {
             servo_data[frame.source] = moteus::Query::Parse(frame.data, frame.size);
         }
 
-        int i = 0;
-
         for (const auto& pair : servo_data) {
             const auto r = pair.second;
             state.position[i] = r.position;
             state.velocity[i] = r.velocity;
-            if (i == 0) {
-                state.bus_voltage = r.voltage;
-            }
-            i++;
+            state.bus_voltage = r.voltage;
+            state.fault_code = r.fault;
         }
 
         // Publish the state over LCM
@@ -254,7 +293,7 @@ int main(int argc, char** argv) {
         stop_command_frames.push_back(pair.second->MakeStop());
     }
 
-    transport->BlockingCycle(&stop_command_frames[0], stop_command_frames.size(), &replies);
+    // transport->BlockingCycle(&stop_command_frames[0], stop_command_frames.size(), &replies);
 
     // Ensure LCM handler thread finishes before exiting
     std::cout << "Waiting for LCM handler thread to finish." << std::endl;

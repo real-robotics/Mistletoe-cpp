@@ -15,30 +15,42 @@ int main(int argc, char** argv) {
     // construct transport with correct servo map
     pi3hat::Pi3HatMoteusTransport::Options pi3hat_options;
     std::map<int, int> servo_map;
-    servo_map.insert({13,1});
+    servo_map.insert({11,1});
+    servo_map.insert({41,4});
     pi3hat_options.servo_map = servo_map;
     auto transport = std::make_shared<pi3hat::Pi3HatMoteusTransport>(pi3hat_options);
 
     std::map<int, std::shared_ptr<moteus::Controller>> controllers;
     std::map<int, moteus::Query::Result> servo_data;
 
-    // controller ids have the format of [bus number][controller # on bus] ie. 31
-    int id = 13;
-    moteus::Controller::Options options;
+    const int IDS[] = {
+        11, 41
+    };
 
-    // higher voltage res
-    moteus::Query::Format query_format;
-    query_format.voltage = moteus::Resolution::kFloat;
-    options.query_format = query_format;
-    options.id = 13;
-    options.bus = 1;
-    options.transport = transport;
-    controllers[0] = std::make_shared<moteus::Controller>(options);
+    for (int i = 0; i < 2; i++) {
+        // controller ids have the format of [bus number][controller # on bus] ie. 31
+        moteus::Controller::Options options;
+
+        // higher voltage res
+        moteus::Query::Format query_format;
+        query_format.voltage = moteus::Resolution::kFloat;
+        options.query_format = query_format;
+        options.id = IDS[i];
+        
+        if (IDS[i] == 11) {
+            options.bus = 1;
+        } else if (IDS[i] == 41) {
+            options.bus = 4;
+        }
+
+        options.transport = transport;
+        controllers[i] = std::make_shared<moteus::Controller>(options);
+    }
 
     // Stop all servos initially
     for (const auto& pair : controllers) {
         pair.second->SetStop();
-    }
+    }    
     
     while (true) { 
 
