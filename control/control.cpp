@@ -29,6 +29,38 @@ const int IDS[] = {
     41, 42, 43  // back right
 };
 
+const int NUM_JOINTS = 12;
+
+// position limits are set within the moteus configs as well, but these are here just in case. 
+const std::array<std::array<float, 2>, NUM_JOINTS> joint_limits = {
+    std::array<float, 2>{-0.15f, 0.15f},  // Joint 11
+    std::array<float, 2>{-0.5f, 0.5f},    // Joint 12
+    std::array<float, 2>{-0.5f, 0.5f},    // Joint 13
+    std::array<float, 2>{-0.15f, 0.15f},  // Joint 21
+    std::array<float, 2>{-0.5f, 0.5f},    // Joint 22
+    std::array<float, 2>{-0.5f, 0.5f},    // Joint 23
+    std::array<float, 2>{-0.15f, 0.15f},  // Joint 31
+    std::array<float, 2>{-0.5f, 0.5f},    // Joint 32
+    std::array<float, 2>{-0.5f, 0.5f},    // Joint 33
+    std::array<float, 2>{-0.15f, 0.15f},  // Joint 41
+    std::array<float, 2>{-0.5f, 0.5f},    // Joint 42
+    std::array<float, 2>{-0.5f, 0.5f}     // Joint 43
+};
+
+bool is_within_joint_limit(int joint_index, float value) {
+    // Check if the joint index is valid
+    if (joint_index < 0 || joint_index >= NUM_JOINTS) {
+        std::cerr << "Invalid joint index: " << joint_index << std::endl;
+        return false;
+    }
+
+    // Get the joint limit for the corresponding index
+    const auto& limit = joint_limits[joint_index];
+
+    // Check if the value is within the joint limit range
+    return (value >= limit[0] && value <= limit[1]);
+}
+
 std::vector<moteus::Controller> controllers;
 
 // Global flag to signal exit
@@ -46,9 +78,22 @@ class LCMHandler {
     void handleControlCommand(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
                        const exlcm::quad_command_t *msg)
     {
-        if (enabled) {
-            std::cout << "Received Message on Channel: " << chan << std::endl;
-            std::cout << "    timestamp = " << msg->timestamp << std::endl;
+        bool all_joints_within_limit = true;
+        // std::cout << "Received Message on Channel: " << chan << std::endl;
+        // std::cout << "    timestamp = " << msg->timestamp << std::endl;
+
+        // TODO: sub with near max/min for joints that go over? or retrain rl model to have heavy penalties when commands are above thresholds. 
+
+        for (int i = 0; i < 12; i++) {
+            if (!is_within_joint_limit(i, msg->position[i])) {
+                std::cout << "position on joint " << i << " not within bounds." << std::endl;
+                std::cout << "position on joint " << i << msg->position[i] << std::endl;
+                all_joints_within_limit = false;
+            }
+        }
+
+        // there are numerous software software checks on position limits, so this is just in case somewhere else screws up somehow.
+        if (all_joints_within_limit) {
             std::copy(msg->position, msg->position + 12, commanded_position);
         }
     }
@@ -135,18 +180,6 @@ int main(int argc, char** argv) {
         }
     }
 
-
-    // int id = 13;
-    // std::cout << "controller " << id << " initialized." << std::endl;
-    // moteus::Controller::Options options;
-    // moteus::Query::Format query_format;
-    // query_format.voltage = moteus::Resolution::kFloat;
-    // options.query_format = query_format;
-    // options.bus = 1;
-    // options.id = id;
-    // options.transport = transport;
-    // controllers[0] = std::make_shared<moteus::Controller>(options);
-
     // Set up signal handler
     setup_signal_handler();
 
@@ -196,8 +229,8 @@ int main(int argc, char** argv) {
             for (const auto& pair : controllers) {
                 command_frames.push_back(pair.second->MakeStop());
             }
-
-            // transport->BlockingCycle(&command_frames[0], command_frames.size(), &replies);
+  
+            transport->BlockingCycle(&command_frames[0], command_frames.size(), &replies);
 
             controllers_stopped = true;
 
@@ -212,10 +245,7 @@ int main(int argc, char** argv) {
                 state.position[i] = r.position;
                 state.velocity[i] = r.velocity;
                 state.bus_voltage = r.voltage;
-                // int8_t fault = 0;
-                if (r.fault > 0) {
-                    std::cout << r.fault << std::endl;
-                }
+                state.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
                 i++;
             }
         }
@@ -241,8 +271,7 @@ int main(int argc, char** argv) {
             int j = 0;
             for (const auto& pair : controllers) {
                 moteus::PositionMode::Command position_command;
-                double commanded_position = lcmHandler.commanded_position[2];
-                position_command.position = commanded_position;
+                position_command.position = lcmHandler.commanded_position[j];
                 position_command.velocity = 0;
                 position_command.velocity_limit = 0.5;
                 position_command.accel_limit = 2; 
@@ -268,12 +297,26 @@ int main(int argc, char** argv) {
             servo_data[frame.source] = moteus::Query::Parse(frame.data, frame.size);
         }
 
+        int i = 0;
+
         for (const auto& pair : servo_data) {
             const auto r = pair.second;
             state.position[i] = r.position;
             state.velocity[i] = r.velocity;
             state.bus_voltage = r.voltage;
+            // std::cout << "Voltage on controller "  << i << " : " << r.voltage << std::endl;
             state.fault_code = r.fault;
+
+            int mode = static_cast<int>(r.mode);
+            int fault = static_cast<int>(r.fault);
+            if (fault > 0) {
+                std::cout << "detected fault on controller " << i << " fault " << fault << std::endl;
+            }
+            if (mode > 10) {
+                std::cout << "detected mode on controller " << i << " mode " << mode << std::endl;
+            }
+            state.timestamp = std::chrono::system_clock::now().time_since_epoch().count();
+            i++;
         }
 
         // Publish the state over LCM
@@ -281,7 +324,6 @@ int main(int argc, char** argv) {
 
         usleep(10000); // sleep for 10ms
     }
-
 
     // Clean up after main loop exits
     std::cout << "Stopping all servos." << std::endl;
@@ -293,7 +335,7 @@ int main(int argc, char** argv) {
         stop_command_frames.push_back(pair.second->MakeStop());
     }
 
-    // transport->BlockingCycle(&stop_command_frames[0], stop_command_frames.size(), &replies);
+    transport->BlockingCycle(&stop_command_frames[0], stop_command_frames.size(), &replies);
 
     // Ensure LCM handler thread finishes before exiting
     std::cout << "Waiting for LCM handler thread to finish." << std::endl;

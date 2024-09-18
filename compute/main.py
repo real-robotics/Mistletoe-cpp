@@ -38,6 +38,17 @@ prev_action = [0,0,0,0,0,0,0,0,0,0,0,0]
 
 manual_command_enabled = True
 
+def parse_RL_inference_output(inference_output):
+    # for whatever reason isaaclab scales output by 0.25, and then convert to radians, then convert to format that can be used by us
+    converted_output = ((inference_output[0][0] * 0.25)/(2*np.pi)).tolist()
+    sorted_output = []
+    for i in range(4):
+        for j in range(12):
+            if j%4==i:
+                sorted_output.append(converted_output[j])
+
+    return sorted_output
+
 def publish_state(position, velocity, bus_voltage, fault_code):
     state_c2d_msg = quad_state_t()
     state_c2d_msg.timestamp = time.time_ns()
@@ -51,9 +62,7 @@ def publish_state(position, velocity, bus_voltage, fault_code):
 
     # print('published to c2d')
         
-def publish_RL_command():
-    global target_joint_pos
-
+def publish_RL_command(target_joint_pos):
     command_msg = quad_command_t()
     command_msg.timestamp = time.time_ns()
     command_msg.position = target_joint_pos
@@ -82,8 +91,9 @@ def handle_state(channel, data):
         observation = base_lin_vel + imu.get_ang_vel() + imu.get_projected_gravity() + velocity_command + list(msg.position) + list(msg.velocity) + target_joint_pos
 
         observation = np.array([observation]).astype(np.float32)
-        target_joint_pos = ppo_policy.compute_joint_pos([observation])
-        publish_RL_command()
+        # convert to format understandable by moteus
+        target_joint_pos = parse_RL_inference_output(ppo_policy.compute_joint_pos([observation]))
+        publish_RL_command(target_joint_pos)
 
     publish_state(list(msg.position), list(msg.velocity), msg.bus_voltage, msg.fault_code)
 
@@ -96,7 +106,6 @@ def handle_velocity_command(channel, data):
     velocity_command = [velocity_command_msg.lin_vel_x, velocity_command_msg.lin_vel_y, velocity_command_msg.ang_vel_z]
 
 def forward_enable_data(channel, data):
-    
     if data is None:
         return
     print("ENABLED" if enabled_t.decode(data).enabled else "DISABLED")
