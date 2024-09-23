@@ -35,35 +35,38 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Copy control folder to the intermediate host, excluding the build folder
-echo "Copying $CONTROL_FOLDER to $INTERMEDIATE_HOST, excluding $EXCLUDE_FOLDER..."
-sshpass -p "$PASSWORD" rsync -av --exclude="$EXCLUDE_FOLDER" "$CONTROL_FOLDER/" "$INTERMEDIATE_USER@$INTERMEDIATE_HOST:$INTERMEDIATE_DEST/$CONTROL_FOLDER"
+# Check if the --compute-only flag is used, and skip control-related tasks if true
+if [[ "$1" != "--compute-only" ]]; then
+    # Copy control folder to the intermediate host, excluding the build folder
+    echo "Copying $CONTROL_FOLDER to $INTERMEDIATE_HOST, excluding $EXCLUDE_FOLDER..."
+    sshpass -p "$PASSWORD" rsync -av --exclude="$EXCLUDE_FOLDER" "$CONTROL_FOLDER/" "$INTERMEDIATE_USER@$INTERMEDIATE_HOST:$INTERMEDIATE_DEST/$CONTROL_FOLDER"
 
-# Check if the copy was successful
-if [ $? -ne 0 ]; then
-    echo "Failed to copy $CONTROL_FOLDER to $INTERMEDIATE_HOST"
-    exit 1
+    # Check if the copy was successful
+    if [ $? -ne 0 ]; then
+        echo "Failed to copy $CONTROL_FOLDER to $INTERMEDIATE_HOST"
+        exit 1
+    fi
+
+    # Copy control folder from the intermediate host to the final destination
+    echo "Copying $CONTROL_FOLDER from $INTERMEDIATE_HOST to $FINAL_HOST..."
+    sshpass -p "$PASSWORD" ssh "$INTERMEDIATE_USER@$INTERMEDIATE_HOST" "sshpass -p '$PASSWORD' scp -r $INTERMEDIATE_DEST/$CONTROL_FOLDER $FINAL_USER@$FINAL_HOST:$FINAL_DEST"
+
+    # Check if the copy was successful
+    if [ $? -ne 0 ]; then
+        echo "Failed to copy $CONTROL_FOLDER to $FINAL_HOST"
+        exit 1
+    fi
+
+    # Delete control folder from the intermediate host
+    echo "Deleting $CONTROL_FOLDER from $INTERMEDIATE_HOST..."
+    sshpass -p "$PASSWORD" ssh "$INTERMEDIATE_USER@$INTERMEDIATE_HOST" "rm -rf $INTERMEDIATE_DEST/$CONTROL_FOLDER"
+
+    # SSH into the final host and clean and build the project
+    echo "Building project on $FINAL_HOST..."
+    sshpass -p "$PASSWORD" ssh "$INTERMEDIATE_USER@$INTERMEDIATE_HOST" "sshpass -p '$PASSWORD' ssh -t $FINAL_USER@$FINAL_HOST 'cd $FINAL_DEST/control; sh build.sh'"
+
+    echo "Deployment and build completed successfully."
 fi
-
-# Copy control folder from the intermediate host to the final destination
-echo "Copying $CONTROL_FOLDER from $INTERMEDIATE_HOST to $FINAL_HOST..."
-sshpass -p "$PASSWORD" ssh "$INTERMEDIATE_USER@$INTERMEDIATE_HOST" "sshpass -p '$PASSWORD' scp -r $INTERMEDIATE_DEST/$CONTROL_FOLDER $FINAL_USER@$FINAL_HOST:$FINAL_DEST"
-
-# Check if the copy was successful
-if [ $? -ne 0 ]; then
-    echo "Failed to copy $CONTROL_FOLDER to $FINAL_HOST"
-    exit 1
-fi
-
-# Delete control folder from the intermediate host
-echo "Deleting $CONTROL_FOLDER from $INTERMEDIATE_HOST..."
-sshpass -p "$PASSWORD" ssh "$INTERMEDIATE_USER@$INTERMEDIATE_HOST" "rm -rf $INTERMEDIATE_DEST/$CONTROL_FOLDER"
-
-# SSH into the final host and clean and build the project
-echo "Building project on $FINAL_HOST..."
-sshpass -p "$PASSWORD" ssh "$INTERMEDIATE_USER@$INTERMEDIATE_HOST" "sshpass -p '$PASSWORD' ssh -t $FINAL_USER@$FINAL_HOST 'cd $FINAL_DEST/control; sh build.sh'"
-
-echo "Deployment and build completed successfully."
 
 # Restart services
 echo "Restarting services..."
