@@ -9,7 +9,7 @@ def main():
     # Create a message with all values set to zero
     msg = quad_command_t()
     msg.timestamp = time.time_ns()
-    msg.position = [0.05,0,0,0,0,0,0,0,0,0,0,0]
+    msg.position = [0,0,0,0,0,0,0,0,0,0,0,0]
     msg.manual_command = True
 
     # Publish the message on the VELOCITY_COMMAND channel

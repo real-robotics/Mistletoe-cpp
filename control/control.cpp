@@ -92,6 +92,9 @@ class LCMHandler {
             }
         }
 
+        // std::cout << "position on joint 2 " << msg->position[1] << std::endl;
+        // std::cout << "position on joint 3 " << msg->position[2] << std::endl;
+
         // there are numerous software software checks on position limits, so this is just in case somewhere else screws up somehow.
         if (all_joints_within_limit) {
             std::copy(msg->position, msg->position + 12, commanded_position);
@@ -272,6 +275,10 @@ int main(int argc, char** argv) {
             for (const auto& pair : controllers) {
                 moteus::PositionMode::Command position_command;
                 position_command.position = lcmHandler.commanded_position[j];
+
+                std::cout << j << std::endl;
+                std::cout << lcmHandler.commanded_position[j] << std::endl;
+
                 position_command.velocity = 0;
                 position_command.velocity_limit = 0.5;
                 position_command.accel_limit = 2; 

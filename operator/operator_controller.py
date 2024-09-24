@@ -8,7 +8,7 @@ from exlcm import velocity_command_t
 # TODO: max angular velocity in the z axis
 MAX_ANG_VEL_Z = 1
 
-lc = lcm.LCM()
+lc = lcm.LCM("udpm://239.255.76.67:7667?ttl=1")    
 msg = velocity_command_t()
 
 # Initialize Pygame
@@ -44,22 +44,29 @@ try:
                 pygame.quit()
                 exit()
 
-        # Get joystick values
-        x_velocity = joystick.get_axis(0)  # X-axis of the first joystick
-        y_velocity = joystick.get_axis(1)  # Y-axis of the first joystick
+        x_velocity = joystick.get_axis(1)  # X-axis of the first joystick
+        y_velocity = joystick.get_axis(0)  # Y-axis of the first joystick
+        ang_vel_z = -1 * joystick.get_axis(2)
 
-        ang_vel_z = joystick.get_axis(2) * MAX_ANG_VEL_Z
+        if (abs(x_velocity) < 0.01):
+            x_velocity = 0
+        if (abs(y_velocity) < 0.01):
+            y_velocity = 0
+        if (abs(ang_vel_z) < 0.01):
+            ang_vel_z = 0
 
         # Print the results
         msg.timestamp = time.time_ns()
         msg.lin_vel_x = x_velocity
         msg.lin_vel_y = y_velocity
         msg.ang_vel_z = ang_vel_z
-        print(y_velocity)
+        print(f'x: {x_velocity}')
+        print(f'y: {y_velocity}')
+        print(f'ang_vel: {ang_vel_z}')
         # print(ang_vel_z)
         lc.publish("VELOCITY_COMMAND", msg.encode())
 
-        pygame.time.wait(100)  # Wait for 100 milliseconds
+        pygame.time.wait(10)  # Wait for 10 milliseconds
 
 except KeyboardInterrupt:
     pygame.quit()
