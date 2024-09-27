@@ -23,8 +23,6 @@ class quad_command_t
          */
         double     position[12];
 
-        int8_t     manual_command;
-
     public:
         /**
          * Encode a message into binary form.
@@ -127,9 +125,6 @@ int quad_command_t::_encodeNoHash(void *buf, int offset, int maxlen) const
     tlen = __double_encode_array(buf, offset + pos, maxlen - pos, &this->position[0], 12);
     if(tlen < 0) return tlen; else pos += tlen;
 
-    tlen = __boolean_encode_array(buf, offset + pos, maxlen - pos, &this->manual_command, 1);
-    if(tlen < 0) return tlen; else pos += tlen;
-
     return pos;
 }
 
@@ -143,9 +138,6 @@ int quad_command_t::_decodeNoHash(const void *buf, int offset, int maxlen)
     tlen = __double_decode_array(buf, offset + pos, maxlen - pos, &this->position[0], 12);
     if(tlen < 0) return tlen; else pos += tlen;
 
-    tlen = __boolean_decode_array(buf, offset + pos, maxlen - pos, &this->manual_command, 1);
-    if(tlen < 0) return tlen; else pos += tlen;
-
     return pos;
 }
 
@@ -154,13 +146,12 @@ int quad_command_t::_getEncodedSizeNoHash() const
     int enc_size = 0;
     enc_size += __int64_t_encoded_array_size(NULL, 1);
     enc_size += __double_encoded_array_size(NULL, 12);
-    enc_size += __boolean_encoded_array_size(NULL, 1);
     return enc_size;
 }
 
 uint64_t quad_command_t::_computeHash(const __lcm_hash_ptr *)
 {
-    uint64_t hash = 0x4c40dd6308edb27cLL;
+    uint64_t hash = 0xfbcc14de5759795fLL;
     return (hash<<1) + ((hash>>63)&1);
 }
 

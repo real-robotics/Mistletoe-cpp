@@ -70,6 +70,7 @@ class LCMHandler {
   public:
     bool enabled = false;
     double commanded_position[12] = {0};
+    int action_id = 0;
 
     LCMHandler() {
         enabled = false;
@@ -79,10 +80,6 @@ class LCMHandler {
                        const exlcm::quad_command_t *msg)
     {
         bool all_joints_within_limit = true;
-        // std::cout << "Received Message on Channel: " << chan << std::endl;
-        // std::cout << "    timestamp = " << msg->timestamp << std::endl;
-
-        // TODO: sub with near max/min for joints that go over? or retrain rl model to have heavy penalties when commands are above thresholds. 
 
         for (int i = 0; i < 12; i++) {
             if (!is_within_joint_limit(i, msg->position[i])) {
@@ -92,14 +89,7 @@ class LCMHandler {
             }
         }
 
-        // std::cout << "position on joint 2 " << msg->position[1] << std::endl;
-        // std::cout << "position on joint 3 " << msg->position[2] << std::endl;
-
-        // there are numerous software software checks on position limits, so this is just in case somewhere else screws up somehow.
-        if (all_joints_within_limit) {
-            std::copy(msg->position, msg->position + 12, commanded_position);
-        }
-
+        action_id = msg->action_id;
     }
 
     void handleEnable(const lcm::ReceiveBuffer *rbuf, const std::string &chan,
@@ -140,18 +130,22 @@ int main(int argc, char** argv) {
     pi3hat::Pi3HatMoteusTransport::Options pi3hat_options;
     std::map<int, int> servo_map;
 
+    // front right
     servo_map.insert({11,1});
     servo_map.insert({12,1});
     servo_map.insert({13,1});
     
+    // front right
     servo_map.insert({21,2});
     servo_map.insert({22,2});
     servo_map.insert({23,2});
 
+    // back right
     servo_map.insert({31,3});
     servo_map.insert({32,3});
     servo_map.insert({33,3});
     
+    // back left
     servo_map.insert({41,4});
     servo_map.insert({42,4});
     servo_map.insert({43,4});
@@ -200,7 +194,7 @@ int main(int argc, char** argv) {
     lcm->subscribe("ENABLED", &LCMHandler::handleEnable, &lcmHandler);
 
     // Launch LCM handler thread
-    std::thread lcm_thread(handle_lcm, lcm);
+    handle_lcm()
 
     exlcm::quad_state_t state = {
         .timestamp = std::chrono::system_clock::now().time_since_epoch().count()
@@ -212,8 +206,6 @@ int main(int argc, char** argv) {
     int step = 0;
 
     bool first_pos = true;
-
-    auto start = std::chrono::high_resolution_clock::now();
 
     while (!exit_requested) { // Main loop continues until exit is requested
 
@@ -283,10 +275,6 @@ int main(int argc, char** argv) {
                 command_frames.push_back(pair.second->MakePosition(position_command));
                 j++;
             }
-            if (first_pos == true) {
-                start = std::chrono::high_resolution_clock::now();
-                first_pos = false;
-            }
 
             // controllers are no longer stopped when position commanded
             controllers_stopped = false;
@@ -327,7 +315,7 @@ int main(int argc, char** argv) {
         // Publish the state over LCM
         lcm->publish("STATE_C2C", &state);
 
-        usleep(1000); // sleep for 10ms
+        usleep(10000); // sleep for 10ms
     }
 
     // Clean up after main loop exits

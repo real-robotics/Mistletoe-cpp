@@ -13,15 +13,15 @@ class PPOPolicy:
             print(f"Failed to load RKNN model. Error code: {ret}")
             exit(ret)
     
-    def compute_joint_pos(self, obs):
+    def predict(self, obs):
 
         # weird behavior where if tolist() is run once, then it stays as a list 
-        joint_pos = self.rknn_lite.inference(inputs=obs)
+        action = self.rknn_lite.inference(inputs=obs)
 
         # idrk whats going on here but its like weird formatting bs
-        if (type(joint_pos) != list):
-            joint_pos = joint_pos.flatten().tolist()
-            return joint_pos
+        if (type(action) != list):
+            action = action.flatten().tolist()
+            return action
         else:
-            joint_pos = joint_pos[0].flatten().tolist()
-            return joint_pos
+            action = action[0].flatten().tolist()
+            return action

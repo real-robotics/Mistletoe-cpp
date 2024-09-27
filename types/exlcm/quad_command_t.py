@@ -8,19 +8,17 @@ import struct
 
 class quad_command_t(object):
 
-    __slots__ = ["timestamp", "position", "manual_command"]
+    __slots__ = ["timestamp", "position"]
 
-    __typenames__ = ["int64_t", "double", "boolean"]
+    __typenames__ = ["int64_t", "double"]
 
-    __dimensions__ = [None, [12], None]
+    __dimensions__ = [None, [12]]
 
     def __init__(self):
         self.timestamp = 0
         """ LCM Type: int64_t """
         self.position = [ 0.0 for dim0 in range(12) ]
         """ LCM Type: double[12] """
-        self.manual_command = False
-        """ LCM Type: boolean """
 
     def encode(self):
         buf = BytesIO()
@@ -31,7 +29,6 @@ class quad_command_t(object):
     def _encode_one(self, buf):
         buf.write(struct.pack(">q", self.timestamp))
         buf.write(struct.pack('>12d', *self.position[:12]))
-        buf.write(struct.pack(">b", self.manual_command))
 
     @staticmethod
     def decode(data):
@@ -48,13 +45,12 @@ class quad_command_t(object):
         self = quad_command_t()
         self.timestamp = struct.unpack(">q", buf.read(8))[0]
         self.position = struct.unpack('>12d', buf.read(96))
-        self.manual_command = bool(struct.unpack('b', buf.read(1))[0])
         return self
 
     @staticmethod
     def _get_hash_recursive(parents):
         if quad_command_t in parents: return 0
-        tmphash = (0x4c40dd6308edb27c) & 0xffffffffffffffff
+        tmphash = (0xfbcc14de5759795f) & 0xffffffffffffffff
         tmphash  = (((tmphash<<1)&0xffffffffffffffff) + (tmphash>>63)) & 0xffffffffffffffff
         return tmphash
     _packed_fingerprint = None

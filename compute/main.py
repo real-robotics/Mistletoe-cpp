@@ -1,17 +1,29 @@
-import lcm
-import time
-from exlcm import quad_command_t, quad_state_t, velocity_command_t, enabled_t
 import threading
+import lcm
+from time import time
+from exlcm import quad_command_t, quad_state_t, velocity_command_t, enabled_t
+import time
 import numpy as np 
-
 import os 
-
 from IMU import IMU
 from StateEstimatorModel import StateEstimatorModel
 from PPOPolicy import PPOPolicy
-
 import socket
 
+from utils import parse_RL_inference_output, sort_moteus_to_isaaclab, np_revs_to_radians, generate_session_filename, log_observations_and_actions
+
+# INITIALIZATION
+
+csv_filepath = generate_session_filename(base_directory="/home/orangepi/Documents/logs")
+
+# standing position offsets used in isaaclab, in radians
+JOINT_OFFSETS = np.array([0.0000,  0.0000,  0.0000,  0.0000,  0.5236, -0.5236, -0.5236,  0.5236, 0.8727, -0.8727, -0.8727,  0.8727])
+
+# joint offsets except in the order expected of the data from moteus.
+SORTED_JOINT_OFFSETS = np.array([0.0000, 0.5236, 0.8727, 0.0000, -0.5236, -0.8727, 0.0000, -0.5236, -0.8727, 0.0000, 0.5236, 0.8727])
+
+# LCM setup
+lc_pi = lcm.LCM("udpm://239.255.77.67:7667?ttl=1")
 file_path = os.path.abspath(__file__)
 directory_path = os.path.dirname(file_path)
 
@@ -25,132 +37,138 @@ lc_pi = lcm.LCM("udpm://239.255.77.67:7667?ttl=1")
 pc_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 pc_addr = ('10.42.0.199', 7668)
 
-# this is stupid but its to match the outputs of the network models
-# target_joint_pos = (np.array([0.0000,  0.0000,  0.0000,  0.0000,  0.5236, -0.5236, -0.5236,  0.5236, 0.8727, -0.8727, -0.8727,  0.8727])/(2*np.pi)).tolist()
-target_joint_pos = (np.zeros(12)/(2*np.pi)).tolist()
-velocity_command = [0,0,0]
-
-# observation items size of 48
-# base_lin_vel, base_ang_vel, projected_gravity, velocity command of size 3
-# joint pos,vel,action of size 12
-
-# initailze to joint offset, don't know how good this actually is
-# prev_action = (np.array([0.0000,  0.0000,  0.0000,  0.0000,  0.5236, -0.5236, -0.5236,  0.5236, 0.8727, -0.8727, -0.8727,  0.8727])/(2*np.pi)).tolist()
 prev_action = (np.zeros(12)/(2*np.pi)).tolist()
+velocity_command = [0, 0, 0]
 
-# TODO: fix this messy manual command handling that was used for testing
-# manual_command is by default false
-manual_command_enabled = False
+# Shared state for latest observation
+latest_state = None
+state_lock = threading.Lock()
 
-prev_position = 0
+# thanks chatgpt
+# LCM state handler: this runs in a separate thread and updates the latest state
+def handle_state(channel, data):
+    global latest_state
+    # Decode the incoming state message
+    received_state = quad_state_t.decode(data)
 
-JOINT_OFFSETS = np.array([0.0000,  0.0000,  0.0000,  0.0000,  0.5236, -0.5236, -0.5236,  0.5236, 0.8727, -0.8727, -0.8727,  0.8727])
+    # Lock the shared state and update it
+    with state_lock:
+        latest_state = received_state
 
-# joint offsets except in the order expected of the data from moteus.
-SORTED_JOINT_OFFSETS = np.array([0.0000, 0.5236, 0.8727, 0.0000, -0.5236, -0.8727, 0.0000, -0.5236, -0.8727, 0.0000, 0.5236, 0.8727])
+    publish_state(list(received_state.position), list(received_state.velocity), received_state.bus_voltage, received_state.fault_code)
 
-def parse_RL_inference_output(inference_output):
-    # for whatever reason isaaclab scales output by 0.25, and then convert to radians, then convert to format that can be used by us
-    scaled_output = inference_output[0]*0.25
-    offset_output = ((scaled_output + JOINT_OFFSETS)/(2*np.pi))
-    sorted_output = []
-    for i in range(4):
-        for j in range(12):
-            if j%4==i:
-                sorted_output.append(offset_output[j])
 
-    return sorted_output
-
-# sorts an array with the format expected from moteus (ie. 11,12,13,21,22, etc.) to format expected for isaaclab (ie. 11,21,31,41,12,22, etc.)
-# thanks to chatgpt
-
-def sort_moteus_to_isaaclab(arr):
-    if len(arr) % 3 != 0:
-        raise ValueError("The length of the array must be divisible by 3")
-    
-    grouped = [[], [], []]  # Three groups for idx % 3 = 0, 1, 2
-
-    # Iterate over the array and group elements based on idx % 3
-    for idx, value in enumerate(arr):
-        grouped[idx % 3].append(value)
-
-    # Flatten the grouped lists into a single list
-    return grouped[0] + grouped[1] + grouped[2]
-
-def publish_state(position, velocity, bus_voltage, fault_code):
-    state_c2d_msg = quad_state_t()
-    state_c2d_msg.timestamp = time.time_ns()
-    state_c2d_msg.position = position
-    state_c2d_msg.velocity = velocity
-    state_c2d_msg.bus_voltage = bus_voltage
-    state_c2d_msg.fault_code = fault_code
-
-    # lc_pc.publish("STATE_C2D", state_c2d_msg.encode())
-    pc_socket.sendto(state_c2d_msg.encode(), pc_addr)
-
-    # print('published to c2d')
-        
-def publish_RL_command(target_joint_pos):
+# Function to send action via LCM
+def send_command_via_lcm(action):
     command_msg = quad_command_t()
     command_msg.timestamp = time.time_ns()
-    command_msg.position = target_joint_pos
+    command_msg.position = action
     lc_pi.publish("COMMAND", command_msg.encode())
 
-
-# numpy
-def np_revs_to_radians(position_revs_arr):
-    position_rads = (position_revs_arr*2*np.pi)
-    return position_rads
-
-def handle_state(channel, data):
-
-    # print(imu.get_projected_gravity())
-
-    global target_joint_pos
-    global manual_command_enabled
+# Function to run the RL policy at a fixed rate using delta time
+def run_policy_loop(frequency=200):
     global prev_action
-    # print(f'{target_joint_pos}\n{velocity_command}')
-    
-    msg = quad_state_t.decode(data)
-    # print(f'lcm msg recieved: {msg}')
-    # print(type(target_joint_pos))
-    # print(target_joint_pos)
-    # also this is kind of disgusting
-    # have to do [0][0].tolist() because weird outputs of models
 
-    # offsets are subtracted because mdp.joint_pos_rel is used in the RL policy training (meaning default offsets are subtracted during training for obs space)
-    # use sort to moteus_to_isaaclab function because this is getting inputted as obs for policy trained on isaaclab.
-    position_radians_rel = sort_moteus_to_isaaclab((np_revs_to_radians(np.array(list(msg.position))) - SORTED_JOINT_OFFSETS).tolist())
-    velocity_radians_rel = sort_moteus_to_isaaclab((np_revs_to_radians(np.array(list(msg.velocity)))).tolist())
-    
-    # print(list(msg.position))
+    # Calculate the time step duration based on the desired frequency
+    time_step = 1.0 / frequency
+    iteration_count = 0
+    frequency_check_time = time.time()  # Track the starting time for frequency calculation
 
-    # only publish RL based position commands when manual control is false
-    if manual_command_enabled == False:
-        # print(target_joint_pos)
-        state_estimator_input = imu.get_ang_vel() + imu.get_projected_gravity() + velocity_command + position_radians_rel + velocity_radians_rel + prev_action
-        # convert into format required for model
+    while True:
+        # Record the start time of this loop iteration
+        loop_start_time = time.time()
+
+        # --- Profiling: Time to get state ---
+        state_start_time = time.time()
+        
+        # Get the latest state
+        with state_lock:
+            if latest_state is None:
+                continue  # Skip if no state is available yet
+            # Extract the most recent state
+            received_state = latest_state
+
+        state_elapsed_time = time.time() - state_start_time
+        # print(f"Time to get state: {state_elapsed_time:.6f} s")
+
+        # --- Profiling: IMU reading (asynchronously fetched) ---
+        imu_start_time = time.time()
+
+        # Get the most recent IMU data (non-blocking)
+        with imu_lock:
+            if imu_data is None:
+                continue  # Skip if no state is available yet
+            ang_vel, grav_proj = imu_data
+
+        imu_elapsed_time = time.time() - imu_start_time
+        # print(f"Time to read IMU: {imu_elapsed_time:.6f} s")
+
+        # --- Profiling: Process RL inputs ---
+        rl_input_start_time = time.time()
+
+        # Process the state for RL input
+        position_radians_rel = sort_moteus_to_isaaclab(
+            np_revs_to_radians(np.array(received_state.position)) - SORTED_JOINT_OFFSETS)
+        velocity_radians_rel = sort_moteus_to_isaaclab(
+            np_revs_to_radians(np.array(received_state.velocity)))
+
+        # Prepare state estimator input
+        state_estimator_input = ang_vel + grav_proj + velocity_command + \
+                                position_radians_rel + velocity_radians_rel + prev_action
         state_estimator_input = np.array([state_estimator_input]).astype(np.float32)
 
+        # Estimate base linear velocity
         base_lin_vel = state_estimator.compute_lin_vel([state_estimator_input])[0][0].tolist()
 
-        observation = base_lin_vel + imu.get_ang_vel() + imu.get_projected_gravity() + velocity_command + position_radians_rel + velocity_radians_rel + prev_action
-        # print(position_radians_rel)
-        # print(observation)
+        # Prepare the observation for the RL policy
+        observation = base_lin_vel + ang_vel + grav_proj + velocity_command + \
+                      position_radians_rel + velocity_radians_rel + prev_action
         observation = np.array([observation]).astype(np.float32)
-        print(observation)
-        # convert to format understandable by moteus
-        inference_output = ppo_policy.compute_joint_pos([observation])
-        target_joint_pos = parse_RL_inference_output(inference_output)
-        prev_action = inference_output
-        publish_RL_command(target_joint_pos)
 
-    publish_state(list(msg.position), list(msg.velocity), msg.bus_voltage, msg.fault_code)
+        rl_input_elapsed_time = time.time() - rl_input_start_time
+        # print(f"Time to prepare RL inputs: {rl_input_elapsed_time:.6f} s")
 
-    # print('published stuff')
+        # --- Profiling: RL policy prediction ---
+        rl_predict_start_time = time.time()
+        
+        # Use the policy to predict the next action
+        action = parse_RL_inference_output(ppo_policy.predict([observation]), JOINT_OFFSETS)
+        
+        rl_predict_elapsed_time = time.time() - rl_predict_start_time
+        # print(f"Time for RL policy prediction: {rl_predict_elapsed_time:.6f} s")
+
+        # --- Profiling: Sending command ---
+        send_command_start_time = time.time()
+
+        # Send the computed action
+        send_command_via_lcm(action)
+
+        send_command_elapsed_time = time.time() - send_command_start_time
+        # print(f"Time to send command: {send_command_elapsed_time:.6f} s")
+
+        # Update the previous action
+        prev_action = action
+
+        # Calculate elapsed time and adjust sleep duration
+        elapsed_time = time.time() - loop_start_time
+        sleep_duration = max(0, time_step - elapsed_time)
+        # print(f"Iteration time: {elapsed_time:.6f} s, Sleep duration: {sleep_duration:.6f} s")
+
+        # Sleep for the remaining time to maintain the loop frequency
+        time.sleep(sleep_duration)
+
+        # Increment the iteration count and check frequency consistency
+        iteration_count += 1
+        current_time = time.time()
+        if current_time - frequency_check_time >= 1.0:  # Check once every second
+            actual_frequency = iteration_count / (current_time - frequency_check_time)
+            print(f"Current frequency: {actual_frequency:.2f} Hz")
+
+            # Reset for the next second
+            iteration_count = 0
+            frequency_check_time = current_time
 
 def handle_velocity_command(channel, data):
-    # print('velocity command')
     global velocity_command
 
     velocity_command_msg = velocity_command_t.decode(data)
@@ -162,47 +180,56 @@ def forward_enable_data(channel, data):
     print("ENABLED" if enabled_t.decode(data).enabled else "DISABLED")
     lc_pi.publish("ENABLED", data)
 
-def forward_command_data(channel, data):
-    global manual_command_enabled
-    global prev_position
+def publish_state(position, velocity, bus_voltage, fault_code):
+    state_c2d_msg = quad_state_t()
+    state_c2d_msg.timestamp = time.time_ns()
+    state_c2d_msg.position = position
+    state_c2d_msg.velocity = velocity
+    state_c2d_msg.bus_voltage = bus_voltage
+    state_c2d_msg.fault_code = fault_code
 
-    # print(imu.get_projected_gravity())
-    
-    if data is None:
-        return
-    
-    msg = quad_command_t.decode(data)
+    pc_socket.sendto(state_c2d_msg.encode(), pc_addr)
 
-    manual_command_enabled = msg.manual_command
+    # print('published to c2d')
 
-    if abs(msg.position[2] - prev_position) > 0.1:
-        print(abs(msg.position[2] - prev_position))
-    prev_position = msg.position[2]
+imu_data = None
+imu_lock = threading.Lock()
 
-    # technically this should always be true, but just in case.
-    if (manual_command_enabled == True):
-        # print('forwarded command')
-        # print(quad_command_t.decode(data).position)
-        lc_pi.publish("COMMAND", data)
+# Asynchronous IMU reader thread
+def read_imu_async():
+    global imu_data
+    while True:
+        ang_vel = imu.get_ang_vel()
+        grav_proj = imu.get_projected_gravity()
+        with imu_lock:
+            imu_data = (ang_vel, grav_proj)
 
+
+# Subscribe to the LCM state message channel
 lc_pi.subscribe("STATE_C2C", handle_state)
-
 lc_pc.subscribe("VELOCITY_COMMAND", handle_velocity_command)
 lc_pc.subscribe("ENABLED", forward_enable_data)
-lc_pc.subscribe("COMMAND", forward_command_data)
 
 def handle_lc_pc():
-
     while True:
         lc_pc.handle()
 
 def handle_lc_pi():
-
     while True:
         lc_pi.handle()
 
 thread_pc = threading.Thread(target=handle_lc_pc)
 thread_pi = threading.Thread(target=handle_lc_pi)
+imu_thread = threading.Thread(target=read_imu_async)
 
+imu_thread.start()
 thread_pc.start()
 thread_pi.start()
+
+# Start the policy loop
+def main():
+    print("Starting policy rollout at 200hz")
+    run_policy_loop(frequency=200)
+
+if __name__ == "__main__":
+    main()
