@@ -6,4 +6,5 @@ struct velocity_command_t
     double lin_vel_x;
     double lin_vel_y;
     double ang_vel_z;
+    boolean policy_on;
 }

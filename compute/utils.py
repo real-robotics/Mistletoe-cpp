@@ -7,21 +7,21 @@ from datetime import datetime
 
 def parse_RL_inference_output(inference_output, joint_offsets):
     """
-    Parses the raw inference output from the RL model, scales it, converts to radians, and reorders the array.
+    Parses the raw inference output from the RL model, scales it, converts to radians, and reorders the array for moteus.
     
     The input from isaaclab is scaled by 0.25, then converted to radians, and finally sorted to the order
     required by the moteus system (i.e., reordered with appropriate joint offsets).
 
     Args:
-        inference_output (list): The output from the RL policy, typically as a 2D list with shape [1, 12].
+        inference_output (list): The output from the RL policy. a list of shape (12,).
         joint_offsets (numpy array): Joint offsets in radians, of shape (12,).
 
     Returns:
         list: A sorted list of joint positions after applying the scaling and joint offsets.
     """
-    scaled_output = inference_output[0] * 0.25
+    scaled_output = np.array(inference_output) * 0.25
     offset_output = (scaled_output + joint_offsets) / (2 * np.pi)
-
+    
     sorted_output = []
     for i in range(4):
         for j in range(12):
@@ -30,6 +30,15 @@ def parse_RL_inference_output(inference_output, joint_offsets):
 
     return sorted_output
 
+
+def sort_isaaclab_to_moteus(arr):
+    sorted_output = []
+    for i in range(4):
+        for j in range(12):
+            if j % 4 == i:
+                sorted_output.append(arr[j])
+
+    return sorted_output
 
 def sort_moteus_to_isaaclab(arr):
     """
@@ -132,3 +141,29 @@ def log_observations_and_actions(filepath, observations, actions):
         # Combine observations, previous actions, and current actions into a single row and write to the CSV
         row = observations + actions
         writer.writerow(row)
+
+if __name__ == "__main__":
+
+
+    # standing position offsets used in isaaclab, in radians
+    JOINT_OFFSETS = np.array([0.0000,  0.0000,  0.0000,  0.0000,  0.5236, -0.5236, -0.5236,  0.5236, 0.8727, -0.8727, -0.8727,  0.8727])
+
+    # joint offsets except in the order expected of the data from moteus.
+    # SORTED_JOINT_OFFSETS = np.array([0.0000, 0.5236, 0.8727, 0.0000, -0.5236, -0.8727, 0.0000, -0.5236, -0.8727, 0.0000, 0.5236, 0.8727])
+    
+    moteus_position = np.array(sort_isaaclab_to_moteus([0.,0.,0.,0.,0.08333,-0.08333,-0.08333,0.08333,0.13891,-0.13891,-0.13891,0.13891]))
+    # print(moteus_position)
+
+    print(f'radian defaults {sort_moteus_to_isaaclab(np_revs_to_radians(moteus_position))}')
+
+    # position_radians_rel = sort_moteus_to_isaaclab(np_revs_to_radians(moteus_position) - SORTED_JOINT_OFFSETS) 
+    # position_radians_rel_different = sort_moteus_to_isaaclab(np_revs_to_radians(moteus_position)) - JOINT_OFFSETS
+    # velocity_radians_rel = sort_moteus_to_isaaclab(np_revs_to_radians(np.array(np.zeros(12))))
+
+    # print(position_radians_rel)
+    # print(position_radians_rel_different)
+    # print(velocity_radians_rel)
+    # print(parse_RL_inference_output((-4 * JOINT_OFFSETS).tolist(), JOINT_OFFSETS))
+    # print(sort_moteus_to_isaaclab([11,12,13,21,22,23,31,32,33,41,42,43]))
+    # print(np_revs_to_radians(np.array([1,0.5])))
+    

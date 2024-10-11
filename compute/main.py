@@ -23,7 +23,6 @@ JOINT_OFFSETS = np.array([0.0000,  0.0000,  0.0000,  0.0000,  0.5236, -0.5236, -
 SORTED_JOINT_OFFSETS = np.array([0.0000, 0.5236, 0.8727, 0.0000, -0.5236, -0.8727, 0.0000, -0.5236, -0.8727, 0.0000, 0.5236, 0.8727])
 
 # LCM setup
-lc_pi = lcm.LCM("udpm://239.255.77.67:7667?ttl=1")
 file_path = os.path.abspath(__file__)
 directory_path = os.path.dirname(file_path)
 
@@ -43,6 +42,11 @@ velocity_command = [0, 0, 0]
 # Shared state for latest observation
 latest_state = None
 state_lock = threading.Lock()
+
+enabled = False 
+enabled_lock = threading.Lock()
+
+policy_on = False
 
 # thanks chatgpt
 # LCM state handler: this runs in a separate thread and updates the latest state
@@ -73,8 +77,8 @@ def run_policy_loop(frequency=200):
     time_step = 1.0 / frequency
     iteration_count = 0
     frequency_check_time = time.time()  # Track the starting time for frequency calculation
-
-    while True:
+    
+    while True:        
         # Record the start time of this loop iteration
         loop_start_time = time.time()
 
@@ -107,24 +111,18 @@ def run_policy_loop(frequency=200):
         rl_input_start_time = time.time()
 
         # Process the state for RL input
-        position_radians_rel = sort_moteus_to_isaaclab(
-            np_revs_to_radians(np.array(received_state.position)) - SORTED_JOINT_OFFSETS)
-        velocity_radians_rel = sort_moteus_to_isaaclab(
-            np_revs_to_radians(np.array(received_state.velocity)))
-
-        # Prepare state estimator input
-        state_estimator_input = ang_vel + grav_proj + velocity_command + \
-                                position_radians_rel + velocity_radians_rel + prev_action
+        position_radians_rel = sort_moteus_to_isaaclab(np_revs_to_radians(np.array(received_state.position)) - SORTED_JOINT_OFFSETS) 
+        velocity_radians = sort_moteus_to_isaaclab(np_revs_to_radians(np.array(received_state.velocity)))
+        state_estimator_input = ang_vel + grav_proj + position_radians_rel + velocity_radians + prev_action
         state_estimator_input = np.array([state_estimator_input]).astype(np.float32)
 
         # Estimate base linear velocity
         base_lin_vel = state_estimator.compute_lin_vel([state_estimator_input])[0][0].tolist()
 
         # Prepare the observation for the RL policy
-        observation = base_lin_vel + ang_vel + grav_proj + velocity_command + \
-                      position_radians_rel + velocity_radians_rel + prev_action
+        observation = base_lin_vel + ang_vel + grav_proj + velocity_command + position_radians_rel + velocity_radians + prev_action
         observation = np.array([observation]).astype(np.float32)
-
+        # print(f'pos {position_radians_rel}')
         rl_input_elapsed_time = time.time() - rl_input_start_time
         # print(f"Time to prepare RL inputs: {rl_input_elapsed_time:.6f} s")
 
@@ -132,22 +130,44 @@ def run_policy_loop(frequency=200):
         rl_predict_start_time = time.time()
         
         # Use the policy to predict the next action
-        action = parse_RL_inference_output(ppo_policy.predict([observation]), JOINT_OFFSETS)
+
+        inference_output = ppo_policy.predict([observation])
+        # print(f'inference out: {inference_output}')
+        # print(inference_output[0])
+        action = parse_RL_inference_output(inference_output, JOINT_OFFSETS)
         
         rl_predict_elapsed_time = time.time() - rl_predict_start_time
         # print(f"Time for RL policy prediction: {rl_predict_elapsed_time:.6f} s")
+
+        log_start_time = time.time()
+
+        if (enabled):
+            log_observations_and_actions(csv_filepath, observation.tolist()[0], inference_output)
+
+        log_elapsed = time.time() - log_start_time
+
+        # print(f"Time for log: {log_elapsed:.6f} s")
 
         # --- Profiling: Sending command ---
         send_command_start_time = time.time()
 
         # Send the computed action
-        send_command_via_lcm(action)
+        if policy_on == True:
+            send_command_via_lcm(action)
+        elif policy_on == False:
+            # standstill when policy is toggled off
+            send_command_via_lcm(parse_RL_inference_output(np.zeros(12).tolist(), JOINT_OFFSETS))
+            # print('standby')
 
         send_command_elapsed_time = time.time() - send_command_start_time
         # print(f"Time to send command: {send_command_elapsed_time:.6f} s")
 
-        # Update the previous action
-        prev_action = action
+        # Update the previous action only if enabled, since actions aren't taken during disabled state
+        with enabled_lock:
+            if enabled == True and policy_on == True:
+                prev_action = inference_output
+            else:
+                prev_action = np.zeros(12).tolist()
 
         # Calculate elapsed time and adjust sleep duration
         elapsed_time = time.time() - loop_start_time
@@ -170,14 +190,21 @@ def run_policy_loop(frequency=200):
 
 def handle_velocity_command(channel, data):
     global velocity_command
-
+    global policy_on
+    
     velocity_command_msg = velocity_command_t.decode(data)
     velocity_command = [velocity_command_msg.lin_vel_x, velocity_command_msg.lin_vel_y, velocity_command_msg.ang_vel_z]
 
+    policy_on = velocity_command_msg.policy_on
+
 def forward_enable_data(channel, data):
+    global enabled
+    
     if data is None:
         return
     print("ENABLED" if enabled_t.decode(data).enabled else "DISABLED")
+    enabled_data = enabled_t.decode(data)
+    enabled = enabled_data.enabled
     lc_pi.publish("ENABLED", data)
 
 def publish_state(position, velocity, bus_voltage, fault_code):
@@ -203,6 +230,7 @@ def read_imu_async():
         grav_proj = imu.get_projected_gravity()
         with imu_lock:
             imu_data = (ang_vel, grav_proj)
+            # print(imu_data)
 
 
 # Subscribe to the LCM state message channel
@@ -228,8 +256,9 @@ thread_pi.start()
 
 # Start the policy loop
 def main():
-    print("Starting policy rollout at 200hz")
-    run_policy_loop(frequency=200)
+    freq = 200
+    print(f'Starting policy rollout at {freq}hz')
+    run_policy_loop(frequency=freq)
 
 if __name__ == "__main__":
     main()

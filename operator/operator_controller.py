@@ -36,6 +36,7 @@ last_direction_radians = 0
 
 # joystick threshold
 threshold = 0.05
+button_toggled = False
 
 try:
     while True:
@@ -47,6 +48,10 @@ try:
         x_velocity = joystick.get_axis(1)  # X-axis of the first joystick
         y_velocity = joystick.get_axis(0)  # Y-axis of the first joystick
         ang_vel_z = -1 * joystick.get_axis(2)
+
+        policy_on_button = joystick.get_button(1)
+        if policy_on_button == 1:
+            button_toggled = True
 
         if (abs(x_velocity) < 0.01):
             x_velocity = 0
@@ -60,6 +65,7 @@ try:
         msg.lin_vel_x = x_velocity
         msg.lin_vel_y = y_velocity
         msg.ang_vel_z = ang_vel_z
+        msg.policy_on = button_toggled
         print(f'x: {x_velocity}')
         print(f'y: {y_velocity}')
         print(f'ang_vel: {ang_vel_z}')
@@ -67,6 +73,7 @@ try:
         lc.publish("VELOCITY_COMMAND", msg.encode())
 
         pygame.time.wait(10)  # Wait for 10 milliseconds
+        print(button_toggled)
 
 except KeyboardInterrupt:
     pygame.quit()
