@@ -26,7 +26,7 @@ SORTED_JOINT_OFFSETS = np.array([0.0000, 0.5236, 0.8727, 0.0000, -0.5236, -0.872
 file_path = os.path.abspath(__file__)
 directory_path = os.path.dirname(file_path)
 
-ppo_policy = PPOPolicy(directory_path + '/rknn_models/ppo_policy.rknn')
+ppo_policy = PPOPolicy(directory_path + '/rknn_models/policy.rknn')
 state_estimator = StateEstimatorModel(directory_path + '/rknn_models/state_estimator.rknn')
 imu = IMU()
 
@@ -156,7 +156,7 @@ def run_policy_loop(frequency=200):
             send_command_via_lcm(action)
         elif policy_on == False:
             # standstill when policy is toggled off
-            send_command_via_lcm(parse_RL_inference_output(np.zeros(12).tolist(), JOINT_OFFSETS))
+            send_command_via_lcm(parse_RL_inference_output(np.zeros(12).tolist()))
             # print('standby')
 
         send_command_elapsed_time = time.time() - send_command_start_time
